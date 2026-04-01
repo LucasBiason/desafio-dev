@@ -1,0 +1,455 @@
+{
+  "info": {
+    "_postman_id": "cnab-parser-collection",
+    "name": "CNAB Parser",
+    "description": "## CNAB Parser\n\nAPI collection for the CNAB Parser system.\n\n### Services\n- **User Service** (port 7001): Authentication and user management\n- **CNAB Service** (port 7002): CNAB file upload and transaction management\n\n### Authentication\nAll protected endpoints require a Bearer token in the Authorization header.\nUse the **Login** request first to automatically set the token in environment variables.\n\n### Environment Variables\n- `user_service_url`: Base URL for user-service (default: http://localhost:7001)\n- `cnab_service_url`: Base URL for cnab-service (default: http://localhost:7002)\n- `encoded_token`: JWT token (auto-set by Login request)\n- `logged_user_id`: Current user ID (auto-set by Login request)\n- `target_user_id`: Last created/retrieved user ID (auto-set by Create/Retrieve User)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "cnab-parser"
+  },
+  "item": [
+    {
+      "name": "User Service",
+      "description": "Authentication and user management endpoints (port 7001).",
+      "item": [
+        {
+          "name": "Health",
+          "item": [
+            {
+              "name": "GET Health Check",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{user_service_url}}/health",
+                  "host": ["{{user_service_url}}"],
+                  "path": ["health"]
+                },
+                "description": "## Health Check\n\nReturns service name, version and current timestamp.\nNo authentication required."
+              },
+              "response": [
+                {
+                  "name": "Success (200)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "url": { "raw": "{{user_service_url}}/health", "host": ["{{user_service_url}}"], "path": ["health"] }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"service\": \"user-service\",\n  \"version\": \"0.1.0\",\n  \"dt\": \"2026-04-01T10:00:00.000000Z\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Authentication",
+          "description": "JWT authentication endpoints.\n\nThe **Login** request automatically sets the `encoded_token` environment variable for use in all subsequent requests.",
+          "item": [
+            {
+              "name": "POST Login",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 200) {",
+                      "    const jsonData = pm.response.json();",
+                      "    pm.environment.set('encoded_token', jsonData.encoded_token);",
+                      "    pm.environment.set('logged_user_id', jsonData.user.id);",
+                      "    console.log('Token set successfully for user: ' + jsonData.user.username);",
+                      "}",
+                      "",
+                      "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                      "pm.test('Has encoded_token', () => {",
+                      "    const j = pm.response.json();",
+                      "    pm.expect(j).to.have.property('encoded_token');",
+                      "});",
+                      "pm.test('Has user data', () => {",
+                      "    const j = pm.response.json();",
+                      "    pm.expect(j).to.have.property('user');",
+                      "    pm.expect(j.user).to.have.property('username');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{user_service_url}}/auth/v1/login/",
+                  "host": ["{{user_service_url}}"],
+                  "path": ["auth", "v1", "login", ""]
+                },
+                "description": "## Login\n\nAuthenticates a user and returns a JWT token.\nThe token is automatically saved to the `encoded_token` environment variable.\n\n### Parameters\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| username | string | Yes | Username |\n| password | string | Yes | Password |\n\n### Validations\n- `username` required: 403 \"Username is required.\"\n- `password` required: 403 \"Password is required.\"\n- Invalid credentials: 401 \"Unable to authenticate with provided credentials.\"\n- Inactive user: 403 \"User {username} is inactive.\"\n\n### Response\n- `encoded_token`: JWT token for use in Authorization header\n- `valid_until`: Token expiration datetime\n- `user`: Authenticated user data"
+              },
+              "response": [
+                {
+                  "name": "Success (200)",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}" },
+                    "url": { "raw": "{{user_service_url}}/auth/v1/login/", "host": ["{{user_service_url}}"], "path": ["auth", "v1", "login", ""] }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"encoded_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"valid_until\": \"04/01/2026 15:00:00\",\n  \"user\": {\n    \"id\": 1,\n    \"username\": \"admin\",\n    \"email\": \"admin@cnab.com\",\n    \"first_name\": \"\",\n    \"last_name\": \"\",\n    \"is_active\": true,\n    \"is_staff\": true,\n    \"created_at\": \"2026-04-01T10:00:00.000000Z\",\n    \"updated_at\": \"2026-04-01T10:00:00.000000Z\"\n  }\n}"
+                },
+                {
+                  "name": "Error - Missing username (403)",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": { "mode": "raw", "raw": "{\n  \"password\": \"admin123\"\n}" },
+                    "url": { "raw": "{{user_service_url}}/auth/v1/login/", "host": ["{{user_service_url}}"], "path": ["auth", "v1", "login", ""] }
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"detail\": \"Username is required.\"\n}"
+                },
+                {
+                  "name": "Error - Invalid credentials (401)",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"wrongpass\"\n}" },
+                    "url": { "raw": "{{user_service_url}}/auth/v1/login/", "host": ["{{user_service_url}}"], "path": ["auth", "v1", "login", ""] }
+                  },
+                  "status": "Unauthorized",
+                  "code": 401,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"detail\": \"Unable to authenticate with provided credentials.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "POST Validate Token",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{encoded_token}}" }
+                ],
+                "url": {
+                  "raw": "{{user_service_url}}/auth/v1/validate/",
+                  "host": ["{{user_service_url}}"],
+                  "path": ["auth", "v1", "validate", ""]
+                },
+                "description": "## Validate Token\n\nValidates a JWT token and returns the associated user data.\nUse this endpoint to verify if a token is still valid.\n\n### Headers\n| Header | Value | Required |\n|--------|-------|----------|\n| Authorization | Bearer {token} | Yes |\n\n### Validations\n- Missing/malformed Authorization header: 401\n- Invalid token: 403 \"Invalid Token\"\n- Expired token: 403 \"Token expired at {date}\"\n- Inactive user: 403 \"User {username} is inactive.\"\n\n### Response\n- `encoded_token`: The validated token\n- `valid_until`: Token expiration datetime\n- `user`: User data associated with the token"
+              },
+              "response": [
+                {
+                  "name": "Success (200)",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [{ "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "url": { "raw": "{{user_service_url}}/auth/v1/validate/", "host": ["{{user_service_url}}"], "path": ["auth", "v1", "validate", ""] }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"encoded_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"valid_until\": \"04/01/2026 15:00:00\",\n  \"user\": {\n    \"id\": 1,\n    \"username\": \"admin\",\n    \"email\": \"admin@cnab.com\",\n    \"first_name\": \"\",\n    \"last_name\": \"\",\n    \"is_active\": true,\n    \"is_staff\": true\n  }\n}"
+                },
+                {
+                  "name": "Error - Invalid token (403)",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [{ "key": "Authorization", "value": "Bearer invalid.token.here" }],
+                    "url": { "raw": "{{user_service_url}}/auth/v1/validate/", "host": ["{{user_service_url}}"], "path": ["auth", "v1", "validate", ""] }
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"detail\": \"Invalid Token\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Users",
+          "description": "User CRUD management endpoints.\n\nAll endpoints require authentication via Bearer token.\nCreate/Delete operations require `is_staff=True` or `is_superuser=True`.",
+          "item": [
+            {
+              "name": "GET List Users",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{encoded_token}}" }
+                ],
+                "url": {
+                  "raw": "{{user_service_url}}/users/v1/users/?is_active=true",
+                  "host": ["{{user_service_url}}"],
+                  "path": ["users", "v1", "users", ""],
+                  "query": [
+                    { "key": "is_active", "value": "true", "description": "Filter by active status (true/false)" },
+                    { "key": "username", "value": "", "description": "Filter by username (exact match)", "disabled": true },
+                    { "key": "email", "value": "", "description": "Filter by email (exact match)", "disabled": true },
+                    { "key": "name", "value": "", "description": "Filter by first_name or last_name (contains)", "disabled": true }
+                  ]
+                },
+                "description": "## List Users\n\nReturns a list of all users visible to the authenticated user.\n\n### Authorization\n- Superusers: see all users\n- Staff: see all non-superusers\n- Regular users: see only themselves\n\n### Query Parameters\n| Parameter | Type | Description |\n|-----------|------|-------------|\n| is_active | bool | Filter by active status |\n| username | string | Filter by exact username |\n| email | string | Filter by exact email |\n| name | string | Filter by name (contains match on first_name or last_name) |"
+              },
+              "response": [
+                {
+                  "name": "Success (200)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [{ "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "url": { "raw": "{{user_service_url}}/users/v1/users/", "host": ["{{user_service_url}}"], "path": ["users", "v1", "users", ""] }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "body": "[\n  {\n    \"id\": 1,\n    \"username\": \"admin\",\n    \"email\": \"admin@cnab.com\",\n    \"first_name\": \"\",\n    \"last_name\": \"\",\n    \"is_active\": true,\n    \"is_staff\": true,\n    \"created_at\": \"2026-04-01T10:00:00.000000Z\",\n    \"updated_at\": \"2026-04-01T10:00:00.000000Z\"\n  }\n]"
+                },
+                {
+                  "name": "Error - Not authenticated (403)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": { "raw": "{{user_service_url}}/users/v1/users/", "host": ["{{user_service_url}}"], "path": ["users", "v1", "users", ""] }
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"detail\": \"Invalid Authorization header format.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "POST Create User",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const jsonData = pm.response.json();",
+                      "    pm.environment.set('target_user_id', jsonData.id);",
+                      "    console.log('Created user ID: ' + jsonData.id);",
+                      "}",
+                      "",
+                      "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{encoded_token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"operador\",\n  \"email\": \"operador@cnab.com\",\n  \"password\": \"oper123456\",\n  \"first_name\": \"Operador\",\n  \"last_name\": \"CNAB\"\n}"
+                },
+                "url": {
+                  "raw": "{{user_service_url}}/users/v1/users/",
+                  "host": ["{{user_service_url}}"],
+                  "path": ["users", "v1", "users", ""]
+                },
+                "description": "## Create User\n\nCreates a new user. Only staff or superuser can perform this action.\nThe created user ID is automatically saved to `target_user_id`.\n\n### Parameters\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| username | string | Yes | Unique username |\n| email | string | Yes | Unique email address |\n| password | string | Yes | User password |\n| first_name | string | No | First name |\n| last_name | string | No | Last name |\n\n### Validations\n- `username` must be unique: 400 \"Username already in use\"\n- `email` must be unique: 400 \"Email already registered\"\n- Only staff/superuser can create: 403 \"You do not have permission\"\n\n### Authorization\n- Requires `is_staff=True` or `is_superuser=True`"
+              },
+              "response": [
+                {
+                  "name": "Success (201)",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "body": { "mode": "raw", "raw": "{\n  \"username\": \"operador\",\n  \"email\": \"operador@cnab.com\",\n  \"password\": \"oper123456\",\n  \"first_name\": \"Operador\",\n  \"last_name\": \"CNAB\"\n}" },
+                    "url": { "raw": "{{user_service_url}}/users/v1/users/", "host": ["{{user_service_url}}"], "path": ["users", "v1", "users", ""] }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"id\": 2,\n  \"username\": \"operador\",\n  \"email\": \"operador@cnab.com\",\n  \"first_name\": \"Operador\",\n  \"last_name\": \"CNAB\",\n  \"is_active\": true,\n  \"is_staff\": false,\n  \"created_at\": \"2026-04-01T10:05:00.000000Z\",\n  \"updated_at\": \"2026-04-01T10:05:00.000000Z\"\n}"
+                },
+                {
+                  "name": "Error - Unauthorized (403)",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "body": { "mode": "raw", "raw": "{\n  \"username\": \"test\",\n  \"email\": \"test@cnab.com\",\n  \"password\": \"pass\"\n}" },
+                    "url": { "raw": "{{user_service_url}}/users/v1/users/", "host": ["{{user_service_url}}"], "path": ["users", "v1", "users", ""] }
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"code\": 403,\n  \"detail\": \"You do not have permission to perform this action.\",\n  \"status\": \"UnauthorizedUser\"\n}"
+                },
+                {
+                  "name": "Error - Duplicate username (400)",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"email\": \"other@cnab.com\",\n  \"password\": \"pass\"\n}" },
+                    "url": { "raw": "{{user_service_url}}/users/v1/users/", "host": ["{{user_service_url}}"], "path": ["users", "v1", "users", ""] }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"code\": 400,\n  \"detail\": \"Username already in use.\",\n  \"status\": \"InvalidUserData\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "GET Retrieve User",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{encoded_token}}" }
+                ],
+                "url": {
+                  "raw": "{{user_service_url}}/users/v1/users/{{target_user_id}}/",
+                  "host": ["{{user_service_url}}"],
+                  "path": ["users", "v1", "users", "{{target_user_id}}", ""]
+                },
+                "description": "## Retrieve User\n\nReturns detailed data for a specific user.\n\n### Path Parameters\n| Parameter | Type | Description |\n|-----------|------|-------------|\n| id | integer | User ID |\n\n### Authorization\n- Users can always retrieve their own data\n- Superusers can retrieve any user\n- Staff can retrieve non-superusers\n- Others: 403 Forbidden\n\n### Errors\n- 404: User not found\n- 403: Not authorized to view this user"
+              },
+              "response": [
+                {
+                  "name": "Success (200)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [{ "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "url": { "raw": "{{user_service_url}}/users/v1/users/1/", "host": ["{{user_service_url}}"], "path": ["users", "v1", "users", "1", ""] }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"id\": 1,\n  \"username\": \"admin\",\n  \"email\": \"admin@cnab.com\",\n  \"first_name\": \"\",\n  \"last_name\": \"\",\n  \"is_active\": true,\n  \"is_staff\": true,\n  \"created_at\": \"2026-04-01T10:00:00.000000Z\",\n  \"updated_at\": \"2026-04-01T10:00:00.000000Z\"\n}"
+                },
+                {
+                  "name": "Error - Not found (404)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [{ "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "url": { "raw": "{{user_service_url}}/users/v1/users/99999/", "host": ["{{user_service_url}}"], "path": ["users", "v1", "users", "99999", ""] }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"code\": 404,\n  \"detail\": \"User with id 99999 not found.\",\n  \"status\": \"UserNotFound\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "PATCH Update User",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{encoded_token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"first_name\": \"Updated Name\",\n  \"last_name\": \"Updated Last\"\n}"
+                },
+                "url": {
+                  "raw": "{{user_service_url}}/users/v1/users/{{target_user_id}}/",
+                  "host": ["{{user_service_url}}"],
+                  "path": ["users", "v1", "users", "{{target_user_id}}", ""]
+                },
+                "description": "## Update User\n\nPartially updates a user's data. Only the provided fields are modified.\n\n### Path Parameters\n| Parameter | Type | Description |\n|-----------|------|-------------|\n| id | integer | User ID |\n\n### Parameters (all optional)\n| Field | Type | Description |\n|-------|------|-------------|\n| username | string | New username (must be unique) |\n| email | string | New email (must be unique) |\n| password | string | New password |\n| first_name | string | First name |\n| last_name | string | Last name |\n\n### Authorization\n- Users can update their own data\n- Staff/superuser can update other users\n- Cannot update superusers (unless you are superuser)"
+              },
+              "response": [
+                {
+                  "name": "Success (200)",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "body": { "mode": "raw", "raw": "{\n  \"first_name\": \"Updated\"\n}" },
+                    "url": { "raw": "{{user_service_url}}/users/v1/users/2/", "host": ["{{user_service_url}}"], "path": ["users", "v1", "users", "2", ""] }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"id\": 2,\n  \"username\": \"operador\",\n  \"email\": \"operador@cnab.com\",\n  \"first_name\": \"Updated\",\n  \"last_name\": \"CNAB\",\n  \"is_active\": true,\n  \"is_staff\": false\n}"
+                }
+              ]
+            },
+            {
+              "name": "DELETE Deactivate User",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{encoded_token}}" }
+                ],
+                "url": {
+                  "raw": "{{user_service_url}}/users/v1/users/{{target_user_id}}/",
+                  "host": ["{{user_service_url}}"],
+                  "path": ["users", "v1", "users", "{{target_user_id}}", ""]
+                },
+                "description": "## Deactivate User (Soft Delete)\n\nSets the user's `is_active` to `false`. The user is not physically deleted.\n\n### Path Parameters\n| Parameter | Type | Description |\n|-----------|------|-------------|\n| id | integer | User ID |\n\n### Authorization\n- Only staff or superuser can deactivate users\n- Cannot deactivate superusers\n\n### Response\n- 204 No Content on success\n- 403 if not authorized\n- 404 if user not found"
+              },
+              "response": [
+                {
+                  "name": "Success (204)",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [{ "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "url": { "raw": "{{user_service_url}}/users/v1/users/2/", "host": ["{{user_service_url}}"], "path": ["users", "v1", "users", "2", ""] }
+                  },
+                  "status": "No Content",
+                  "code": 204,
+                  "_postman_previewlanguage": "text",
+                  "body": ""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CNAB Service",
+      "description": "CNAB file upload and transaction management endpoints (port 7002).\n\n**Note:** Endpoints will be added as the CNAB service is implemented.",
+      "item": [
+        {
+          "name": "Health",
+          "item": [
+            {
+              "name": "GET Health Check",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{cnab_service_url}}/health",
+                  "host": ["{{cnab_service_url}}"],
+                  "path": ["health"]
+                },
+                "description": "## Health Check\n\nReturns service health status.\nNo authentication required."
+              },
+              "response": [
+                {
+                  "name": "Success (200)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "url": { "raw": "{{cnab_service_url}}/health", "host": ["{{cnab_service_url}}"], "path": ["health"] }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"status\": \"healthy\"\n}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
