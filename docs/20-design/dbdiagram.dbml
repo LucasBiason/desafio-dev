@@ -1,0 +1,108 @@
+// Desafio CNAB - bycoders_
+// Diagrama de Banco de Dados
+// Colar em https://dbdiagram.io para visualizar
+
+Project cnab_parser {
+  database_type: 'PostgreSQL'
+  Note: 'Sistema de importação e visualização de transações CNAB'
+}
+
+// ============================================
+// Autenticação
+// ============================================
+
+Table auth_user {
+  id serial [pk, increment]
+  username varchar(150) [unique, not null, note: 'Nome de usuário']
+  email varchar(254) [unique, not null, note: 'E-mail do usuário']
+  password varchar(128) [not null, note: 'Hash da senha (PBKDF2)']
+  first_name varchar(150) [note: 'Nome']
+  last_name varchar(150) [note: 'Sobrenome']
+  is_active boolean [default: true, note: 'Usuário ativo']
+  is_staff boolean [default: false, note: 'Acesso ao admin']
+  is_superuser boolean [default: false, note: 'Superusuário']
+  created_at timestamptz [not null, default: `now()`, note: 'Data de criação']
+  updated_at timestamptz [not null, default: `now()`, note: 'Data de atualização']
+}
+
+// ============================================
+// CNAB - Domínio Principal
+// ============================================
+
+Table cnab_transaction_type {
+  id serial [pk, increment]
+  code smallint [unique, not null, note: 'Código do tipo (1-9)']
+  description varchar(50) [not null, note: 'Descrição do tipo']
+  nature varchar(10) [not null, note: 'entrada ou saída']
+  sign char(1) [not null, note: '+ ou -']
+
+  Note: 'Tabela de referência (seed). 9 tipos fixos de transação CNAB.'
+
+  indexes {
+    code [unique, name: 'idx_transaction_type_code']
+  }
+}
+
+Table cnab_store {
+  id serial [pk, increment]
+  name varchar(50) [not null, note: 'Nome da loja (do arquivo CNAB)']
+  owner_name varchar(50) [not null, note: 'Nome do representante/dono']
+  owner_cpf varchar(11) [not null, note: 'CPF do beneficiário']
+  created_at timestamptz [not null, default: `now()`, note: 'Data de criação']
+  updated_at timestamptz [not null, default: `now()`, note: 'Data de atualização']
+
+  Note: 'Lojas extraídas dos arquivos CNAB. Unique por (name, owner_cpf).'
+
+  indexes {
+    (name, owner_cpf) [unique, name: 'idx_store_name_cpf']
+    name [name: 'idx_store_name']
+  }
+}
+
+Table cnab_upload_history {
+  id serial [pk, increment]
+  user_id integer [ref: > auth_user.id, note: 'Usuário que fez o upload']
+  original_filename varchar(255) [not null, note: 'Nome original do arquivo']
+  total_transactions integer [not null, default: 0, note: 'Quantidade de transações importadas']
+  status varchar(20) [not null, default: 'pending', note: 'pending | processing | completed | failed']
+  error_message text [note: 'Mensagem de erro (se falhou)']
+  created_at timestamptz [not null, default: `now()`, note: 'Data do upload']
+
+  Note: 'Histórico de uploads de arquivos CNAB. Rastreabilidade completa.'
+
+  indexes {
+    user_id [name: 'idx_upload_user']
+    status [name: 'idx_upload_status']
+    created_at [name: 'idx_upload_created']
+  }
+}
+
+Table cnab_transaction {
+  id serial [pk, increment]
+  transaction_type_id integer [ref: > cnab_transaction_type.id, not null, note: 'Tipo da transação (1-9)']
+  store_id integer [ref: > cnab_store.id, not null, note: 'Loja vinculada']
+  upload_id integer [ref: > cnab_upload_history.id, not null, note: 'Upload de origem']
+  amount decimal(10,2) [not null, note: 'Valor normalizado (original / 100)']
+  card varchar(20) [not null, note: 'Cartão mascarado (ex: 4753****3153)']
+  occurred_at date [not null, note: 'Data da ocorrência']
+  occurred_time time [not null, note: 'Hora da ocorrência (UTC-3)']
+  created_at timestamptz [not null, default: `now()`, note: 'Data de inserção no sistema']
+
+  Note: 'Transações financeiras importadas do CNAB. Cada linha do arquivo gera um registro.'
+
+  indexes {
+    (store_id, occurred_at) [name: 'idx_transaction_store_date']
+    transaction_type_id [name: 'idx_transaction_type']
+    upload_id [name: 'idx_transaction_upload']
+    occurred_at [name: 'idx_transaction_date']
+  }
+}
+
+// ============================================
+// Relacionamentos
+// ============================================
+
+// auth_user 1---* cnab_upload_history  (um usuário faz vários uploads)
+// cnab_upload_history 1---* cnab_transaction  (um upload importa várias transações)
+// cnab_store 1---* cnab_transaction  (uma loja tem várias transações)
+// cnab_transaction_type 1---* cnab_transaction  (um tipo classifica várias transações)
