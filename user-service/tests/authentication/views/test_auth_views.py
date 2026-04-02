@@ -121,6 +121,7 @@ class TestHealthCheck:
         response = api_client.get("/health/")
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.json()["service"] == "user-service"
+        assert response.json()["system_name"] == "user-service"
+        assert response.json()["status"] == "healthy"
         assert "version" in response.json()
-        assert "dt" in response.json()
+        assert "timestamp" in response.json()
