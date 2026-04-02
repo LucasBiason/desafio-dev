@@ -14,19 +14,19 @@ interface SummaryCardProps {
 }
 
 const SummaryCard: FC<SummaryCardProps> = ({ title, description, icon, linkTo, linkLabel }) => (
-  <div className="bg-[#3b4252] border border-[#434c5e] rounded-xl p-5 flex flex-col gap-4">
+  <div className="bg-[#1e1e1e] border border-[#2a2a2a] rounded-xl p-5 flex flex-col gap-4">
     <div className="flex items-start justify-between">
       <div>
-        <h3 className="text-[#eceff4] text-base font-semibold">{title}</h3>
-        <p className="text-[#d8dee9] text-sm mt-1">{description}</p>
+        <h3 className="text-[#FFFFFF] text-base font-semibold">{title}</h3>
+        <p className="text-[#D8D8D8] text-sm mt-1">{description}</p>
       </div>
-      <div className="w-10 h-10 rounded-lg bg-[#434c5e] flex items-center justify-center text-[#88c0d0] shrink-0">
+      <div className="w-10 h-10 rounded-lg bg-[#2a2a2a] flex items-center justify-center text-[#4FFA7B] shrink-0">
         {icon}
       </div>
     </div>
     <Link
       to={linkTo}
-      className="inline-flex items-center gap-1.5 text-[#88c0d0] hover:text-[#81a1c1] text-sm font-medium transition-colors"
+      className="inline-flex items-center gap-1.5 text-[#4FFA7B] hover:text-[#02BE3B] text-sm font-medium transition-colors"
     >
       {linkLabel}
       <FontAwesomeIcon icon={faChevronRight} size="xs" />
@@ -39,8 +39,8 @@ const Dashboard: FC = () => {
     <Layout>
       <div className="space-y-6">
         <div>
-          <h2 className="text-[#eceff4] text-xl font-semibold">Bem-vindo ao CNAB Parser</h2>
-          <p className="text-[#d8dee9] text-sm mt-1">
+          <h2 className="text-[#FFFFFF] text-xl font-semibold">Bem-vindo ao CNAB Parser</h2>
+          <p className="text-[#D8D8D8] text-sm mt-1">
             Gerencie seus arquivos CNAB e acompanhe as transações das suas lojas.
           </p>
         </div>

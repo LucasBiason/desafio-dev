@@ -8,7 +8,7 @@ interface LayoutProps {
 
 const Layout: FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-[#2e3440]">
+    <div className="min-h-screen bg-[#171616]">
       <Sidebar />
       <div className="ml-64 flex flex-col min-h-screen">
         <Header />
