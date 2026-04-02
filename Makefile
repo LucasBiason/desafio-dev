@@ -25,6 +25,9 @@ help: ## Show this help message
 # Docker
 # ============================================
 
+setup: ## Full setup: build, migrate, seed, create admin user
+	@./scripts/setup.sh
+
 up: ## Start the full stack (build + containers)
 	@echo "$(CYAN)Starting CNAB Parser stack...$(NC)"
 	$(COMPOSE) up --build -d
@@ -62,12 +65,19 @@ logs-frontend: ## Show frontend logs
 # Migrations
 # ============================================
 
-migrate: ## Apply user-service migrations
+migrate: migrate-user migrate-cnab ## Apply all migrations
+
+migrate-user: ## Apply user-service migrations (Django)
 	@echo "$(CYAN)Applying user-service migrations...$(NC)"
 	$(COMPOSE) exec user-service /entrypoint.sh migrate
-	@echo "$(GREEN)Migrations applied.$(NC)"
+	@echo "$(GREEN)User-service migrations applied.$(NC)"
 
-makemigrations: ## Create user-service migrations
+migrate-cnab: ## Apply cnab-service migrations (SQL)
+	@echo "$(CYAN)Applying cnab-service migrations...$(NC)"
+	$(COMPOSE) exec cnab-service /entrypoint.sh migrate
+	@echo "$(GREEN)CNAB-service migrations applied.$(NC)"
+
+makemigrations: ## Create user-service migrations (Django)
 	@echo "$(CYAN)Creating migrations...$(NC)"
 	$(COMPOSE) exec user-service python manage.py makemigrations
 	@echo "$(GREEN)Migrations created.$(NC)"

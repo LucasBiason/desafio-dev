@@ -53,26 +53,15 @@ Upload CNAB → Validação → Parsing (largura fixa) → Normalização → Pe
 
 ```
 desafio-dev/
-├── user-service/            # Microsserviço de autenticação (Django + DRF + JWT)
-│   └── app/
-│       ├── core/            # Settings, URLs, handlers
-│       ├── authentication/  # Controllers, views, JWT, serializers
-│       ├── users/           # Models, controllers, repositories, views, serializers
-│       └── tests/           # Testes (pytest, 98% cobertura)
-├── cnab-service/            # Microsserviço CNAB (FastAPI)
-│   └── app/                 # Upload, parsing, transações, lojas
+├── user-service/            # Autenticação e gestão de usuários (Django + DRF + JWT)
+├── upload-service/          # Upload, parsing e processamento CNAB (FastAPI)
+├── cnab-service/            # Armazenamento e consulta de lojas/transações (FastAPI)
 ├── cnab-shared/             # Biblioteca compartilhada (BaseModel, BaseRepository, middleware)
-│   └── cnab_shared/         # Package Python instalável
-├── frontend-service/        # SPA React + TypeScript + Vite + Tailwind (tema Nord)
-│   └── src/
-│       ├── components/      # Sidebar, Header, Layout, ProtectedRoute
-│       ├── pages/           # Login, Register, Dashboard, Upload, Stores
-│       ├── hooks/           # useAuth
-│       ├── services/        # Clientes HTTP (auth, cnab)
-│       └── types/           # Interfaces TypeScript
-├── configs/                 # Variáveis de ambiente (.env)
-├── docs/                    # Documentação Spec-Driven
-├── assets/                  # Arquivo CNAB de exemplo
+├── frontend-service/        # Interface web (React + TypeScript + Vite + Tailwind Nord)
+├── configs/                 # Variáveis de ambiente e init scripts do PostgreSQL
+├── scripts/                 # Script de setup (instalação com um comando)
+├── docs/                    # Documentação Spec-Driven e ADRs
+├── assets/                  # Arquivo CNAB de exemplo e screenshots
 ├── docker-compose.yml       # Orquestração de containers
 └── Makefile                 # Automação de comandos
 ```
@@ -91,32 +80,39 @@ flowchart TB
 
   subgraph Services["Microsserviços"]
     US["user-service :7001\n(Django + JWT)"]
+    UPS["upload-service :7003\n(FastAPI)"]
     CS["cnab-service :7002\n(FastAPI)"]
     SH["cnab-shared\n(biblioteca)"]
   end
 
   subgraph Data["Dados"]
-    PG[("PostgreSQL :5435")]
-    RD[("Redis :6380")]
+    PG_USERS[("cnab_users")]
+    PG_UPLOADS[("cnab_uploads")]
+    PG_DATA[("cnab_data")]
   end
 
   Browser --> FE
   FE -->|"/api/user/*"| US
+  FE -->|"/api/upload/*"| UPS
   FE -->|"/api/cnab/*"| CS
-  CS -.->|"valida token"| US
+  UPS ==>|"Fernet token"| CS
+  CS -.->|"valida JWT"| US
+  UPS -.->|"valida JWT"| US
   SH -.-> CS
-  US --> PG
-  CS --> PG
-  CS --> RD
+  SH -.-> UPS
+  US --> PG_USERS
+  UPS --> PG_UPLOADS
+  CS --> PG_DATA
 ```
 
-| Serviço | Porta Host | Porta Interna | Descrição |
-|---------|-----------|---------------|-----------|
-| frontend | 7000 | 3000 | Interface React + Nginx (proxy reverso) |
-| user-service | 7001 | 8001 | Autenticação e gestão de usuários (Django + DRF + JWT) |
-| cnab-service | 7002 | 8002 | Upload e processamento CNAB (FastAPI) |
-| db | 5435 | 5432 | PostgreSQL 16 |
-| redis | 6380 | 6379 | Cache e sessões |
+| Serviço | Porta Host | Porta Interna | Banco | Descrição |
+|---------|-----------|---------------|-------|-----------|
+| frontend | 7000 | 3000 | — | Interface React + Nginx (proxy reverso) |
+| user-service | 7001 | 8001 | cnab_users | Autenticação e gestão de usuários |
+| upload-service | 7003 | 8003 | cnab_uploads | Upload, parsing e processamento CNAB |
+| cnab-service | 7002 | 8002 | cnab_data | Armazenamento e consulta de transações |
+| db | 5435 | 5432 | — | PostgreSQL 16 (3 bancos) |
+| redis | 6380 | 6379 | — | Cache e sessões |
 
 ### Arquitetura do Backend (camadas)
 
@@ -141,47 +137,88 @@ Request HTTP
 [Model/DB]   [Regras]    [CNAB File / Cache]
 ```
 
-## Como Usar
+## Instalação
 
-### 1. Pré-requisitos
+### Pré-requisitos
 
-- Docker e Docker Compose
-- Make (opcional, mas recomendado)
+- [Docker](https://docs.docker.com/get-docker/) e [Docker Compose](https://docs.docker.com/compose/install/)
+- [Make](https://www.gnu.org/software/make/) (opcional, mas recomendado)
+- Git
 
-### 2. Configuração
+### Setup completo (primeira vez)
 
 ```bash
+# 1. Clone o repositório
+git clone https://github.com/LucasBiason/desafio-dev.git
+cd desafio-dev
+
+# 2. Copie o arquivo de configuração
 cp configs/.env.example configs/.env
-# Edite configs/.env se necessário (as configurações padrão funcionam localmente)
+
+# 3. Instale tudo com um único comando
+make setup
 ```
 
-### 3. Subir a aplicação
+O `make setup` executa automaticamente:
+- Build das imagens Docker
+- Criação dos bancos de dados (cnab_users + cnab_data)
+- Migrações do user-service (Django)
+- Migrações do cnab-service (Alembic + seed dos tipos de transação)
+- Criação do usuário administrador
+
+Ao final, o sistema estará disponível em:
+
+| Serviço | URL |
+|---------|-----|
+| Frontend | http://localhost:7000 |
+| User Service | http://localhost:7001 |
+| CNAB Service | http://localhost:7002 |
+| Swagger | http://localhost:7001/swagger/ |
+| Redoc | http://localhost:7001/redoc/ |
+
+**Login:** `admin` / `admin123`
+
+### Execução diária
 
 ```bash
-make up       # Sobe toda a stack (build + containers)
-make migrate  # Aplica migrações do banco de dados
+make up       # Sobe a stack (se já estiver instalada)
 make down     # Para todos os containers
+make restart  # Reinicia os containers
 ```
 
-Acesse: **http://localhost:7000** (frontend) | **http://localhost:7001** (user-service) | **http://localhost:7002** (cnab-service)
-
-### 4. Usar a aplicação
+### Usar a aplicação
 
 1. Acesse http://localhost:7000
-2. Crie uma conta ou faça login
+2. Faça login com `admin` / `admin123`
 3. Faça upload do arquivo CNAB (disponível em `assets/CNAB.txt`)
 4. Visualize as transações agrupadas por loja com saldo
 
-### 5. Testes e lint
+### Testes
 
 ```bash
-make test     # Executa testes com cobertura
-make lint     # Ruff check + format
+make test       # Executa todos os testes com cobertura
+make test-user  # Apenas user-service
+make test-cnab  # Apenas cnab-service
+make lint       # Ruff check + format
+```
+
+### Comandos úteis
+
+```bash
+make health       # Verifica saúde de todos os serviços
+make migrate      # Aplica migrações pendentes
+make shell-user   # Shell no user-service
+make shell-cnab   # Shell no cnab-service
+make shell-db     # psql no PostgreSQL
+make logs         # Logs de todos os serviços
+make clean        # Remove volumes e containers (apaga dados)
 ```
 
 ## API
 
 ### Endpoints principais
+
+**user-service (porta 7001):**
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
@@ -192,9 +229,23 @@ make lint     # Ruff check + format
 | GET | `/users/v1/users/{id}/` | Detalhe do usuário |
 | PATCH | `/users/v1/users/{id}/` | Atualização parcial |
 | DELETE | `/users/v1/users/{id}/` | Desativação (soft delete) |
-| POST | `/cnab/upload/` | Upload de arquivo CNAB |
-| GET | `/cnab/stores/` | Lista lojas com saldo |
-| GET | `/cnab/stores/{id}/transactions/` | Transações de uma loja |
+
+**upload-service (porta 7003):**
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| POST | `/upload/` | Upload de arquivo CNAB |
+| GET | `/uploads/` | Histórico de uploads (paginado) |
+| GET | `/uploads/{id}/` | Detalhe de um upload |
+
+**cnab-service (porta 7002):**
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/stores/` | Lista lojas com saldo (paginado) |
+| GET | `/stores/{id}/transactions/` | Transações de uma loja (paginado) |
+| GET | `/transaction-types/` | Tipos de transação CNAB |
+| POST | `/internal/transactions/` | Inserção interna (Fernet token) |
 
 ### Documentação interativa
 
@@ -215,10 +266,14 @@ curl -X POST http://localhost:7001/auth/v1/login/ \
 curl http://localhost:7001/users/v1/users/ \
   -H "Authorization: Bearer <encoded_token>"
 
-# Upload CNAB (via cnab-service)
-curl -X POST http://localhost:7002/cnab/upload/ \
+# Upload CNAB (via upload-service)
+curl -X POST http://localhost:7003/upload/ \
   -H "Authorization: Bearer <encoded_token>" \
   -F "file=@assets/CNAB.txt"
+
+# Listar lojas com saldo (via cnab-service)
+curl http://localhost:7002/stores/ \
+  -H "Authorization: Bearer <encoded_token>"
 ```
 
 ## Documentação
@@ -233,6 +288,7 @@ curl -X POST http://localhost:7002/cnab/upload/ \
 | [Modelo de Dados](docs/20-design/data-model.md) | Diagrama ER e detalhamento das tabelas |
 | [Contratos de API](docs/20-design/api-contracts.md) | Endpoints, request/response, status codes |
 | [Diagrama DB](docs/20-design/dbdiagram.dbml) | DBML para visualizar em dbdiagram.io |
+| [ADR-001](docs/90-decisions/ADR-001-upload-service-separation.md) | Separação do upload-service e autenticação Fernet |
 | [README Original](docs/README-original.md) | Enunciado original do desafio |
 
 ## Tecnologias
@@ -240,12 +296,14 @@ curl -X POST http://localhost:7002/cnab/upload/ \
 | Categoria | Stack |
 |-----------|-------|
 | **Auth Service** | Django 5 · DRF · PyJWT |
-| **CNAB Service** | FastAPI · SQLAlchemy · Pydantic V2 |
+| **Upload Service** | FastAPI · cnab-shared · Fernet |
+| **CNAB Service** | FastAPI · SQLAlchemy · Pydantic V2 · Alembic |
 | **Shared Library** | cnab-shared (BaseModel, BaseRepository, middleware) |
-| **Frontend** | React 18 · TypeScript · Vite · Tailwind CSS (tema Nord) |
-| **Banco de Dados** | PostgreSQL 16 |
+| **Frontend** | React 18 · TypeScript · Vite · Tailwind CSS (tema Nord) · Font Awesome |
+| **Banco de Dados** | PostgreSQL 16 (3 bancos isolados por serviço) |
 | **Cache** | Redis 7 |
 | **Infra** | Docker Compose · Nginx (proxy reverso) · Makefile |
+| **Auth Inter-serviço** | Fernet Token (upload-service → cnab-service) |
 | **Qualidade** | pytest · Ruff · Coverage (98%+) |
 
 ## Formato CNAB

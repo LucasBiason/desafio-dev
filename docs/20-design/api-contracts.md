@@ -2,19 +2,26 @@
 
 ## Serviços
 
-| Serviço | Base URL | Porta |
-|---------|----------|-------|
-| user-service | `http://localhost:7001` | 7001 |
-| cnab-service | `http://localhost:7002` | 7002 |
+| Serviço | Base URL | Porta | Autenticação |
+|---------|----------|-------|-------------|
+| user-service | `http://localhost:7001` | 7001 | — (endpoints públicos + JWT) |
+| upload-service | `http://localhost:7003` | 7003 | JWT (usuário) |
+| cnab-service | `http://localhost:7002` | 7002 | JWT (consultas) / Fernet (inserção interna) |
 
-Via Nginx (frontend): `/api/user/*` → user-service, `/api/cnab/*` → cnab-service.
+Via Nginx (frontend): `/api/user/*` → user-service, `/api/upload/*` → upload-service, `/api/cnab/*` → cnab-service.
 
 ## Autenticação
 
-Todos os endpoints protegidos requerem header:
+### JWT (usuário → serviço)
 ```
 Authorization: Bearer <encoded_token>
 ```
+
+### Fernet (serviço → serviço)
+```
+X-Service-Token: <fernet_encrypted_token>
+```
+Usado pelo upload-service ao chamar o endpoint interno do cnab-service.
 
 ---
 
@@ -29,11 +36,26 @@ Retorna status do serviço. Sem autenticação.
 **Response 200:**
 ```json
 {
-    "service": "user-service",
+    "status": "healthy",
+    "system_name": "user-service",
     "version": "0.1.0",
-    "dt": "2026-04-01T10:00:00.000000Z"
+    "environment": "development",
+    "timestamp": "2026-04-01T10:00:00.000000Z"
 }
 ```
+
+#### GET /health/ready
+
+Verifica conexão com o banco de dados.
+
+**Response 200:** `{"status": "ready", ...}`
+**Response 503:** `{"status": "not_ready", "error": "..."}`
+
+#### GET /health/live
+
+Verifica se o serviço está vivo.
+
+**Response 200:** `{"status": "alive", ...}`
 
 ---
 
@@ -59,7 +81,7 @@ Autentica o usuário e retorna token JWT.
     "user": {
         "id": 1,
         "username": "admin",
-        "email": "admin@cnab.com",
+        "email": "admin@cnabparser.dev",
         "first_name": "",
         "last_name": "",
         "is_active": true,
@@ -71,55 +93,18 @@ Autentica o usuário e retorna token JWT.
 ```
 
 **Response 401:** Credenciais inválidas.
-```json
-{
-    "detail": "Unable to authenticate with provided credentials."
-}
-```
-
 **Response 403:** Username ou password ausente.
-```json
-{
-    "detail": "Username is required."
-}
-```
 
 ---
 
 #### POST /auth/v1/validate/
 
-Valida um token JWT e retorna os dados do usuário associado.
+Valida um token JWT e retorna os dados do usuário.
 
-**Headers:**
-```
-Authorization: Bearer <encoded_token>
-```
+**Headers:** `Authorization: Bearer <encoded_token>`
 
-**Response 200:**
-```json
-{
-    "encoded_token": "eyJhbGciOiJIUzI1NiIs...",
-    "valid_until": "04/01/2026 15:00:00",
-    "user": {
-        "id": 1,
-        "username": "admin",
-        "email": "admin@cnab.com",
-        "first_name": "",
-        "last_name": "",
-        "is_active": true,
-        "is_staff": true,
-        "created_at": "2026-04-01T10:00:00.000000Z",
-        "updated_at": "2026-04-01T10:00:00.000000Z"
-    }
-}
-```
-
+**Response 200:** Mesmo formato do login.
 **Response 403:** Token inválido ou expirado.
-```json
-{
-    "detail": "Invalid Token"
-}
-```
 
 ---
 
@@ -127,12 +112,7 @@ Authorization: Bearer <encoded_token>
 
 #### GET /users/v1/users/
 
-Lista usuários visíveis ao usuário autenticado, com paginação e filtros.
-
-**Autorização:**
-- Superusers: veem todos os usuários
-- Staff: veem todos exceto superusers
-- Usuários comuns: veem apenas a si mesmos
+Lista usuários com paginação e filtros. Requer JWT.
 
 **Paginação:**
 | Parâmetro | Tipo | Default | Descrição |
@@ -144,140 +124,121 @@ Lista usuários visíveis ao usuário autenticado, com paginação e filtros.
 | Parâmetro | Tipo | Descrição |
 |-----------|------|-----------|
 | is_active | bool | Filtrar por status ativo |
-| username | string | Filtrar por username (exato) |
-| email | string | Filtrar por email (exato) |
-| name | string | Filtrar por nome (contém, em first_name ou last_name) |
-| ordering | string | Ordenação: `username`, `-username`, `created_at`, `-created_at` |
+| username | string | Filtrar por username |
+| email | string | Filtrar por email |
+| name | string | Filtrar por nome (contém) |
+| ordering | string | `username`, `-username`, `created_at`, `-created_at` |
 
-**Response 200:**
-```json
-{
-    "count": 2,
-    "next": null,
-    "previous": null,
-    "results": [
-        {
-            "id": 1,
-            "username": "admin",
-            "email": "admin@cnab.com",
-            "first_name": "",
-            "last_name": "",
-            "is_active": true,
-            "is_staff": true,
-            "created_at": "2026-04-01T10:00:00.000000Z",
-            "updated_at": "2026-04-01T10:00:00.000000Z"
-        }
-    ]
-}
-```
-
----
+**Response 200:** Lista paginada `{count, next, previous, results}`.
 
 #### POST /users/v1/users/
 
 Cria um novo usuário. Requer `is_staff` ou `is_superuser`.
 
-**Request:**
-```json
-{
-    "username": "operador",
-    "email": "operador@cnab.com",
-    "password": "oper123456",
-    "first_name": "Operador",
-    "last_name": "CNAB"
-}
-```
-
-**Response 201:**
-```json
-{
-    "id": 2,
-    "username": "operador",
-    "email": "operador@cnab.com",
-    "first_name": "Operador",
-    "last_name": "CNAB",
-    "is_active": true,
-    "is_staff": false,
-    "created_at": "2026-04-01T10:05:00.000000Z",
-    "updated_at": "2026-04-01T10:05:00.000000Z"
-}
-```
-
-**Response 400:** Username ou email duplicado.
-```json
-{
-    "code": 400,
-    "detail": "Username already in use.",
-    "status": "InvalidUserData"
-}
-```
-
-**Response 403:** Sem permissão.
-```json
-{
-    "code": 403,
-    "detail": "You do not have permission to perform this action.",
-    "status": "UnauthorizedUser"
-}
-```
-
----
-
 #### GET /users/v1/users/{id}/
 
-Retorna dados de um usuário específico.
-
-**Autorização:**
-- Usuários podem acessar seus próprios dados
-- Superusers podem acessar qualquer usuário
-- Staff pode acessar não-superusers
-
-**Response 200:**
-```json
-{
-    "id": 1,
-    "username": "admin",
-    "email": "admin@cnab.com",
-    "first_name": "",
-    "last_name": "",
-    "is_active": true,
-    "is_staff": true,
-    "created_at": "2026-04-01T10:00:00.000000Z",
-    "updated_at": "2026-04-01T10:00:00.000000Z"
-}
-```
-
-**Response 404:** Usuário não encontrado.
-```json
-{
-    "code": 404,
-    "detail": "User with id 99999 not found.",
-    "status": "UserNotFound"
-}
-```
-
----
+Retorna dados de um usuário. Autorização por nível.
 
 #### PATCH /users/v1/users/{id}/
 
 Atualiza parcialmente os dados de um usuário.
 
-**Request:**
-```json
-{
-    "first_name": "Nome Atualizado"
-}
-```
+#### DELETE /users/v1/users/{id}/
 
-**Response 200:** Dados atualizados do usuário.
+Desativa um usuário (soft delete). Requer `is_staff` ou `is_superuser`.
+
+**Response 204:** No Content.
 
 ---
 
-#### DELETE /users/v1/users/{id}/
+## Upload Service (porta 7003)
 
-Desativa um usuário (soft delete: `is_active=false`). Requer `is_staff` ou `is_superuser`.
+### Health Check
 
-**Response 204:** No Content.
+#### GET /health
+
+**Response 200:** `{"status": "healthy", "system_name": "upload-service", ...}`
+
+#### GET /health/ready
+
+**Response 200:** `{"status": "ready", ...}` | **503:** `{"status": "not_ready", ...}`
+
+#### GET /health/live
+
+**Response 200:** `{"status": "alive", ...}`
+
+---
+
+### Upload de Arquivo CNAB
+
+#### POST /upload/
+
+Recebe um arquivo CNAB, armazena e processa. Requer JWT do usuário.
+
+**Request:** `multipart/form-data`
+```
+file: <arquivo.txt ou .cnab>
+```
+
+**Response 201:**
+```json
+{
+    "id": "a1b2c3d4-...",
+    "original_filename": "CNAB.txt",
+    "status": "processing",
+    "total_transactions": 0,
+    "created_at": "2026-04-02T10:05:00Z"
+}
+```
+
+**Response 400:** Arquivo inválido.
+```json
+{
+    "detail": "Invalid file. CNAB format expected."
+}
+```
+
+---
+
+### Histórico de Uploads
+
+#### GET /uploads/
+
+Lista uploads do usuário com paginação e filtros. Requer JWT.
+
+**Paginação:**
+| Parâmetro | Tipo | Default | Descrição |
+|-----------|------|---------|-----------|
+| page | int | 1 | Número da página |
+| page_size | int | 20 | Itens por página (max: 100) |
+
+**Filtros:**
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| status | string | `pending`, `processing`, `completed`, `failed` |
+| ordering | string | `created_at`, `-created_at` |
+
+**Response 200:**
+```json
+{
+    "count": 1,
+    "next": null,
+    "previous": null,
+    "results": [
+        {
+            "id": "a1b2c3d4-...",
+            "original_filename": "CNAB.txt",
+            "total_transactions": 21,
+            "status": "completed",
+            "created_at": "2026-04-02T10:05:00Z"
+        }
+    ]
+}
+```
+
+#### GET /uploads/{id}/
+
+Detalhe de um upload específico. Requer JWT.
 
 ---
 
@@ -287,46 +248,67 @@ Desativa um usuário (soft delete: `is_active=false`). Requer `is_staff` ou `is_
 
 #### GET /health
 
-Retorna status do serviço. Sem autenticação.
+**Response 200:** `{"status": "healthy", "system_name": "cnab-service", ...}`
 
-**Response 200:**
-```json
-{
-    "status": "healthy"
-}
-```
+#### GET /health/ready
+
+**Response 200:** `{"status": "ready", ...}` | **503:** `{"status": "not_ready", ...}`
+
+#### GET /health/live
+
+**Response 200:** `{"status": "alive", ...}`
 
 ---
 
-### Upload CNAB
+### Endpoint Interno (Fernet)
 
-#### POST /cnab/upload/
+#### POST /internal/transactions/
 
-Upload e processamento de arquivo CNAB. *(A ser implementado)*
+Recebe dados parseados do upload-service. **Requer Fernet token** no header `X-Service-Token`. Não aceita JWT — somente comunicação entre serviços.
 
-**Request:** `multipart/form-data`
+**Headers:**
 ```
-file: <arquivo.txt>
+X-Service-Token: <fernet_encrypted_token>
+```
+
+**Request:**
+```json
+{
+    "upload_id": "a1b2c3d4-...",
+    "transactions": [
+        {
+            "type_code": 3,
+            "date": "2019-03-01",
+            "amount": "142.00",
+            "cpf": "09620676017",
+            "card": "4753****3153",
+            "time": "15:34:53",
+            "store_owner": "JOÃO MACEDO",
+            "store_name": "BAR DO JOÃO"
+        }
+    ]
+}
 ```
 
 **Response 201:**
 ```json
 {
-    "id": 1,
-    "original_filename": "CNAB.txt",
-    "total_transactions": 21,
-    "status": "completed",
-    "created_at": "2026-04-01T10:05:00Z"
+    "upload_id": "a1b2c3d4-...",
+    "total_inserted": 21,
+    "stores_created": 5
 }
 ```
 
+**Response 401:** Token Fernet ausente ou inválido.
+**Response 422:** Erro no processamento dos dados.
+
 ---
 
-### Lojas e Transações
+### Lojas e Transações (consulta pública)
 
-#### GET /cnab/stores/
+#### GET /stores/
 
-Lista lojas com saldo totalizado, com paginação e filtros. *(A ser implementado)*
+Lista lojas com saldo totalizado. Requer JWT.
 
 **Paginação:**
 | Parâmetro | Tipo | Default | Descrição |
@@ -339,17 +321,17 @@ Lista lojas com saldo totalizado, com paginação e filtros. *(A ser implementad
 |-----------|------|-----------|
 | name | string | Filtrar por nome da loja (contém) |
 | owner_name | string | Filtrar por nome do dono (contém) |
-| ordering | string | Ordenação: `name`, `-name`, `balance`, `-balance` |
+| ordering | string | `name`, `-name`, `balance`, `-balance` |
 
 **Response 200:**
 ```json
 {
     "count": 5,
-    "next": "http://localhost:7002/cnab/stores/?page=2",
+    "next": null,
     "previous": null,
     "results": [
         {
-            "id": 1,
+            "id": "uuid-...",
             "name": "BAR DO JOÃO",
             "owner_name": "JOÃO MACEDO",
             "owner_cpf": "09620676017",
@@ -364,9 +346,9 @@ Lista lojas com saldo totalizado, com paginação e filtros. *(A ser implementad
 
 ---
 
-#### GET /cnab/stores/{store_id}/transactions/
+#### GET /stores/{store_id}/transactions/
 
-Lista transações de uma loja específica, com paginação e filtros. *(A ser implementado)*
+Lista transações de uma loja. Requer JWT.
 
 **Paginação:**
 | Parâmetro | Tipo | Default | Descrição |
@@ -377,11 +359,11 @@ Lista transações de uma loja específica, com paginação e filtros. *(A ser i
 **Filtros:**
 | Parâmetro | Tipo | Descrição |
 |-----------|------|-----------|
-| type | int | Filtro por tipo de transação (1-9) |
-| nature | string | Filtro por natureza: `entrada` ou `saida` |
+| type | int | Tipo de transação (1-9) |
+| nature | string | `entrada` ou `saida` |
 | date_from | date | Data início (YYYY-MM-DD) |
 | date_to | date | Data fim (YYYY-MM-DD) |
-| ordering | string | Ordenação: `occurred_at`, `-occurred_at`, `amount`, `-amount` |
+| ordering | string | `occurred_at`, `-occurred_at`, `amount`, `-amount` |
 
 **Response 200:**
 ```json
@@ -391,17 +373,22 @@ Lista transações de uma loja específica, com paginação e filtros. *(A ser i
     "previous": null,
     "results": [
         {
-            "id": 1,
+            "id": "uuid-...",
             "transaction_type": {
                 "code": 3,
                 "description": "Financiamento",
-                "nature": "saida",
+                "nature": "saída",
                 "sign": "-"
             },
             "amount": "142.00",
             "card": "4753****3153",
             "occurred_at": "2019-03-01",
-            "occurred_time": "15:34:53"
+            "occurred_time": "15:34:53",
+            "store": {
+                "id": "uuid-...",
+                "name": "BAR DO JOÃO",
+                "owner_name": "JOÃO MACEDO"
+            }
         }
     ]
 }
@@ -409,45 +396,24 @@ Lista transações de uma loja específica, com paginação e filtros. *(A ser i
 
 ---
 
-#### GET /cnab/uploads/
+#### GET /transaction-types/
 
-Histórico de uploads com paginação e filtros. *(A ser implementado)*
-
-**Paginação:**
-| Parâmetro | Tipo | Default | Descrição |
-|-----------|------|---------|-----------|
-| page | int | 1 | Número da página |
-| page_size | int | 20 | Itens por página (max: 100) |
-
-**Filtros:**
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| status | string | Filtro por status: `pending`, `processing`, `completed`, `failed` |
-| ordering | string | Ordenação: `created_at`, `-created_at` |
+Lista os 9 tipos de transação CNAB. Sem paginação (dados fixos). Requer JWT.
 
 **Response 200:**
 ```json
-{
-    "count": 1,
-    "next": null,
-    "previous": null,
-    "results": [
-        {
-            "id": 1,
-            "original_filename": "CNAB.txt",
-            "total_transactions": 21,
-            "status": "completed",
-            "created_at": "2026-04-01T10:05:00Z"
-        }
-    ]
-}
+[
+    {"code": 1, "description": "Débito", "nature": "entrada", "sign": "+"},
+    {"code": 2, "description": "Boleto", "nature": "saída", "sign": "-"},
+    {"code": 3, "description": "Financiamento", "nature": "saída", "sign": "-"},
+    {"code": 4, "description": "Crédito", "nature": "entrada", "sign": "+"},
+    {"code": 5, "description": "Recebimento Empréstimo", "nature": "entrada", "sign": "+"},
+    {"code": 6, "description": "Vendas", "nature": "entrada", "sign": "+"},
+    {"code": 7, "description": "Recebimento TED", "nature": "entrada", "sign": "+"},
+    {"code": 8, "description": "Recebimento DOC", "nature": "entrada", "sign": "+"},
+    {"code": 9, "description": "Aluguel", "nature": "saída", "sign": "-"}
+]
 ```
-
----
-
-#### GET /cnab/transaction-types/
-
-Lista tipos de transação (referência). *(A ser implementado)*
 
 ---
 
@@ -459,10 +425,12 @@ Lista tipos de transação (referência). *(A ser implementado)*
 | 201 | Created |
 | 204 | No Content (soft delete) |
 | 400 | Bad Request (validação) |
-| 401 | Unauthorized (credenciais inválidas) |
-| 403 | Forbidden (sem token / token inválido / sem permissão) |
+| 401 | Unauthorized (credenciais inválidas / Fernet inválido) |
+| 403 | Forbidden (sem token / sem permissão) |
 | 404 | Not Found |
+| 422 | Unprocessable Entity (erro de processamento) |
 | 500 | Internal Server Error |
+| 503 | Service Unavailable (banco indisponível) |
 
 ## Documentação Interativa
 
