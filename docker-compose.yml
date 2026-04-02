@@ -97,6 +97,35 @@ services:
     volumes:
       - ./cnab-service/app:/app/app
 
+  upload-service:
+    build:
+      context: .
+      dockerfile: upload-service/Dockerfile
+      target: test
+    container_name: desafio-dev-upload-service
+    command: ["runserver"]
+    ports:
+      - "${UPLOAD_SERVICE_PORT:-7003}:8003"
+    env_file:
+      - configs/.env
+    environment:
+      - PORT=8003
+      - DATABASE_URL=${UPLOAD_DATABASE_URL:-postgresql://cnab:cnab123@db:5432/cnab_uploads}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - ./upload-service/app:/app/app
+      - upload_data:/app/uploads
+
   # ============================================
   # Frontend
   # ============================================
@@ -113,7 +142,10 @@ services:
         condition: service_healthy
       cnab-service:
         condition: service_healthy
+      upload-service:
+        condition: service_healthy
 
 volumes:
   postgres_data:
   redis_data:
+  upload_data:
