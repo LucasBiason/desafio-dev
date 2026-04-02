@@ -2,7 +2,7 @@ import { memo } from 'react';
 import type { FC } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMagnifyingGlass, faXmark } from '@fortawesome/free-solid-svg-icons';
-import FilterChip from './FilterChip';
+import FilterChip from '../../components/FilterChip';
 import type { UploadStatus } from '../../types/upload';
 
 const STATUS_CHIPS: { value: UploadStatus; label: string; colorClass: string; dotClass: string }[] = [

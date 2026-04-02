@@ -1,6 +1,7 @@
-import { useState, useMemo, memo } from 'react';
-import type { FC, ChangeEvent } from 'react';
+import React, { useState, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import {
   faBoxOpen,
   faChevronUp,
@@ -10,27 +11,38 @@ import {
   faAnglesLeft,
   faAnglesRight,
 } from '@fortawesome/free-solid-svg-icons';
-import StatusBadge from './StatusBadge';
-import type { UploadResponse } from '../../types/upload';
 
-type SortKey = 'original_filename' | 'status' | 'total_transactions' | 'created_at';
-type SortDir = 'asc' | 'desc';
-
-const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+export interface Column<T> {
+  key: string;
+  label: string;
+  sortable?: boolean;
+  render?: (value: unknown, row: T) => ReactNode;
+  className?: string;
 }
 
+interface DataTableProps<T> {
+  data: T[];
+  columns: Column<T>[];
+  loading?: boolean;
+  emptyIcon?: IconDefinition;
+  emptyMessage?: string;
+  pageSizeOptions?: number[];
+  defaultSortKey?: string;
+  defaultSortDir?: 'asc' | 'desc';
+  rowKey?: (row: T) => string;
+}
+
+type SortDir = 'asc' | 'desc';
+
+const DEFAULT_PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
+
 interface SortIconProps {
-  columnKey: SortKey;
-  sortKey: SortKey;
+  columnKey: string;
+  sortKey: string;
   sortDir: SortDir;
 }
 
-const SortIcon: FC<SortIconProps> = ({ columnKey, sortKey, sortDir }) => {
+const SortIcon: React.FC<SortIconProps> = ({ columnKey, sortKey, sortDir }) => {
   if (columnKey !== sortKey) {
     return (
       <FontAwesomeIcon
@@ -49,57 +61,55 @@ const SortIcon: FC<SortIconProps> = ({ columnKey, sortKey, sortDir }) => {
   );
 };
 
-const SKELETON_WIDTHS = ['w-[60%]', 'w-[80%]', 'w-[50%]', 'w-[120px]', 'w-[100px]'];
-
-const SkeletonRow: FC = () => (
-  <tr className="border-b border-white/5 animate-pulse">
-    {SKELETON_WIDTHS.map((wClass, i) => (
-      <td key={i} className="px-4 py-3">
-        <div className={`h-3 bg-[#2a2a2a] rounded ${wClass}`} />
-      </td>
-    ))}
-  </tr>
-);
-
-interface UploadDataTableProps {
-  uploads: UploadResponse[];
-  loading: boolean;
-  emptyStateMessage: string;
+function isNumeric(value: unknown): boolean {
+  if (typeof value === 'number') return true;
+  if (typeof value === 'string' && value.trim() !== '') {
+    return !isNaN(Number(value));
+  }
+  return false;
 }
 
-const UploadDataTable: FC<UploadDataTableProps> = memo(({ uploads, loading, emptyStateMessage }) => {
-  const [sortKey, setSortKey] = useState<SortKey>('created_at');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
+function compareValues(a: unknown, b: unknown, dir: SortDir): number {
+  if (isNumeric(a) && isNumeric(b)) {
+    const numA = Number(a);
+    const numB = Number(b);
+    return dir === 'asc' ? numA - numB : numB - numA;
+  }
+
+  const strA = String(a ?? '').toLowerCase();
+  const strB = String(b ?? '').toLowerCase();
+  if (strA < strB) return dir === 'asc' ? -1 : 1;
+  if (strA > strB) return dir === 'asc' ? 1 : -1;
+  return 0;
+}
+
+function DataTable<T extends Record<string, unknown>>({
+  data,
+  columns,
+  loading = false,
+  emptyIcon,
+  emptyMessage,
+  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
+  defaultSortKey,
+  defaultSortDir = 'asc',
+  rowKey,
+}: DataTableProps<T>) {
+  const [sortKey, setSortKey] = useState<string>(defaultSortKey ?? '');
+  const [sortDir, setSortDir] = useState<SortDir>(defaultSortDir);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[1]);
+  const [pageSize, setPageSize] = useState(pageSizeOptions[1] ?? pageSizeOptions[0] ?? 10);
 
-  const sortedUploads = useMemo(() => {
-    return [...uploads].sort((a, b) => {
-      let valA: string | number = a[sortKey] ?? '';
-      let valB: string | number = b[sortKey] ?? '';
+  const sortedData = useMemo(() => {
+    if (!sortKey) return data;
+    return [...data].sort((a, b) => compareValues(a[sortKey], b[sortKey], sortDir));
+  }, [data, sortKey, sortDir]);
 
-      if (sortKey === 'total_transactions') {
-        valA = Number(valA);
-        valB = Number(valB);
-        return sortDir === 'asc'
-          ? (valA as number) - (valB as number)
-          : (valB as number) - (valA as number);
-      }
-
-      valA = String(valA).toLowerCase();
-      valB = String(valB).toLowerCase();
-      if (valA < valB) return sortDir === 'asc' ? -1 : 1;
-      if (valA > valB) return sortDir === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [uploads, sortKey, sortDir]);
-
-  const totalFiltered = sortedUploads.length;
+  const totalFiltered = sortedData.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalFiltered);
-  const pageRows = sortedUploads.slice(startIndex, endIndex);
+  const pageRows = sortedData.slice(startIndex, endIndex);
 
   const pageNumbers = useMemo(() => {
     const range: number[] = [];
@@ -110,7 +120,7 @@ const UploadDataTable: FC<UploadDataTableProps> = memo(({ uploads, loading, empt
     return range;
   }, [safePage, totalPages]);
 
-  const handleSortColumn = (key: SortKey) => {
+  const handleSortColumn = (key: string) => {
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
@@ -120,24 +130,14 @@ const UploadDataTable: FC<UploadDataTableProps> = memo(({ uploads, loading, empt
     setCurrentPage(1);
   };
 
-  const handlePageSizeChange = (e: ChangeEvent<HTMLSelectElement>) => {
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setPageSize(Number(e.target.value));
     setCurrentPage(1);
   };
 
-  const SortableHeader: FC<{ label: string; colKey: SortKey }> = ({ label, colKey }) => (
-    <th
-      scope="col"
-      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#898989] cursor-pointer hover:text-white select-none transition-colors"
-      onClick={() => handleSortColumn(colKey)}
-      aria-sort={sortKey === colKey ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
-    >
-      <span className="inline-flex items-center gap-1">
-        {label}
-        <SortIcon columnKey={colKey} sortKey={sortKey} sortDir={sortDir} />
-      </span>
-    </th>
-  );
+  const skeletonColumnCount = columns.length;
+
+  const resolvedEmptyIcon = emptyIcon ?? faBoxOpen;
 
   return (
     <div className="bg-[#1e1e1e] border border-white/5 rounded-xl overflow-hidden">
@@ -150,7 +150,7 @@ const UploadDataTable: FC<UploadDataTableProps> = memo(({ uploads, loading, empt
             className="filter-input rounded-lg px-2 py-1.5 text-xs cursor-pointer"
             aria-label="Itens por página"
           >
-            {PAGE_SIZE_OPTIONS.map((size) => (
+            {pageSizeOptions.map((size) => (
               <option key={size} value={size}>
                 {size}
               </option>
@@ -161,75 +161,107 @@ const UploadDataTable: FC<UploadDataTableProps> = memo(({ uploads, loading, empt
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full" aria-label="Histórico de uploads">
+        <table className="w-full">
           <thead>
             <tr className="border-b border-white/5 bg-[#171616]/50">
-              <SortableHeader label="Arquivo" colKey="original_filename" />
-              <SortableHeader label="Status" colKey="status" />
-              <SortableHeader label="Transações" colKey="total_transactions" />
-              <th
-                scope="col"
-                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#898989] select-none"
-              >
-                Erro
-              </th>
-              <SortableHeader label="Data de Upload" colKey="created_at" />
+              {columns.map((col) =>
+                col.sortable ? (
+                  <th
+                    key={col.key}
+                    scope="col"
+                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#898989] cursor-pointer hover:text-white select-none transition-colors"
+                    onClick={() => handleSortColumn(col.key)}
+                    aria-sort={
+                      sortKey === col.key
+                        ? sortDir === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : 'none'
+                    }
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {col.label}
+                      <SortIcon
+                        columnKey={col.key}
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                      />
+                    </span>
+                  </th>
+                ) : (
+                  <th
+                    key={col.key}
+                    scope="col"
+                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#898989] select-none"
+                  >
+                    {col.label}
+                  </th>
+                )
+              )}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+              Array.from({ length: 5 }).map((_, rowIndex) => (
+                <tr key={rowIndex} className="border-b border-white/5 animate-pulse">
+                  {Array.from({ length: skeletonColumnCount }).map((_, colIndex) => (
+                    <td key={colIndex} className="px-4 py-3">
+                      <div
+                        className={`h-3 bg-[#2a2a2a] rounded ${
+                          colIndex % 3 === 0
+                            ? 'w-[60%]'
+                            : colIndex % 3 === 1
+                            ? 'w-[80%]'
+                            : 'w-[50%]'
+                        }`}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))
             ) : pageRows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-16 text-center">
+                <td colSpan={columns.length} className="px-4 py-16 text-center">
                   <div className="flex flex-col items-center gap-3">
                     <FontAwesomeIcon
-                      icon={faBoxOpen}
+                      icon={resolvedEmptyIcon}
                       className="text-[#D8D8D8] text-4xl opacity-30"
                       aria-hidden="true"
                     />
-                    <p className="text-[#D8D8D8] font-medium">Nenhum upload encontrado</p>
-                    <p className="text-[#898989] text-sm">{emptyStateMessage}</p>
+                    <p className="text-[#D8D8D8] font-medium">Nenhum registro encontrado</p>
+                    {emptyMessage && (
+                      <p className="text-[#898989] text-sm">{emptyMessage}</p>
+                    )}
                   </div>
                 </td>
               </tr>
             ) : (
-              pageRows.map((upload) => (
-                <tr
-                  key={upload.id}
-                  className="border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors"
-                >
-                  <td
-                    className="px-4 py-3 text-sm text-[#FFFFFF] font-medium max-w-[200px] truncate"
-                    title={upload.original_filename}
+              pageRows.map((row, rowIndex) => {
+                const key = rowKey ? rowKey(row) : String(rowIndex);
+                return (
+                  <tr
+                    key={key}
+                    className="border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors"
                   >
-                    {upload.original_filename}
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <StatusBadge status={upload.status} />
-                  </td>
-
-                  <td className="px-4 py-3 text-sm text-[#D8D8D8] tabular-nums">
-                    {upload.total_transactions}
-                  </td>
-
-                  <td
-                    className="px-4 py-3 text-sm text-[#FF4444] max-w-[200px] truncate"
-                    title={upload.error_message ?? undefined}
-                  >
-                    {upload.error_message ? (
-                      <span className="truncate block">{upload.error_message}</span>
-                    ) : (
-                      <span className="text-[#898989]">—</span>
-                    )}
-                  </td>
-
-                  <td className="px-4 py-3 text-sm text-[#D8D8D8] tabular-nums whitespace-nowrap">
-                    {formatDate(upload.created_at)}
-                  </td>
-                </tr>
-              ))
+                    {columns.map((col) => {
+                      const value = row[col.key];
+                      return (
+                        <td
+                          key={col.key}
+                          className={`px-4 py-3 text-sm text-[#D8D8D8]${col.className ? ` ${col.className}` : ''}`}
+                          title={
+                            col.className?.includes('truncate') && typeof value === 'string'
+                              ? value
+                              : undefined
+                          }
+                        >
+                          {col.render ? col.render(value, row) : String(value ?? '')}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -303,8 +335,6 @@ const UploadDataTable: FC<UploadDataTableProps> = memo(({ uploads, loading, empt
       )}
     </div>
   );
-});
+}
 
-UploadDataTable.displayName = 'UploadDataTable';
-
-export default UploadDataTable;
+export default DataTable;
