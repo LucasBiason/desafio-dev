@@ -267,3 +267,107 @@ body {
   background-color: rgba(2, 190, 59, 0.5);
   cursor: not-allowed;
 }
+
+/* === Text colors === */
+.text-primary { color: #FFFFFF; }
+.text-secondary { color: #D8D8D8; }
+.text-muted { color: #898989; }
+.text-accent { color: #4FFA7B; }
+.text-error { color: #FF4444; }
+.text-warning { color: #FFB800; }
+.text-success { color: #02BE3B; }
+.text-dim { color: #3a3a3a; }
+.text-hover { color: #3a3a3a; }
+
+/* === Layout backgrounds === */
+.bg-surface { background-color: #1e1e1e; }
+.bg-input { background-color: #2a2a2a; }
+.bg-hover { background-color: #3a3a3a; }
+.bg-page-dim { background-color: rgba(23, 22, 22, 0.5); }
+
+/* === Border colors === */
+.border-surface { border-color: rgba(255, 255, 255, 0.05); }
+.border-subtle { border-color: rgba(255, 255, 255, 0.1); }
+.border-hover { border-color: rgba(255, 255, 255, 0.3); }
+.border-accent { border-color: #4FFA7B; }
+.border-input { border-color: #2a2a2a; }
+
+/* === Component styles === */
+.surface-card {
+  background-color: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0.75rem;
+}
+
+.header-bar {
+  background-color: #1e1e1e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-bg { background-color: #1e1e1e; }
+
+.nav-item-active {
+  background-color: #2a2a2a;
+  border-left: 2px solid #4FFA7B;
+  color: #4FFA7B;
+  padding-left: 14px;
+}
+
+.nav-item-inactive {
+  color: #D8D8D8;
+}
+
+.nav-item-inactive:hover {
+  background-color: #2a2a2a;
+  color: #FFFFFF;
+}
+
+.avatar-circle {
+  background-color: #02BE3B;
+  color: #FFFFFF;
+}
+
+.btn-reload {
+  background-color: #2a2a2a;
+  color: #D8D8D8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.btn-reload:hover {
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Skeleton loading */
+.skeleton { background-color: #2a2a2a; }
+
+/* Spinner */
+.spinner-track { border-color: #2a2a2a; }
+.spinner-accent { border-top-color: #4FFA7B; }
+
+/* Drop zone */
+.dropzone-idle {
+  border: 2px dashed #2a2a2a;
+  background-color: #171616;
+}
+.dropzone-idle:hover {
+  border-color: #3a3a3a;
+}
+.dropzone-active {
+  border: 2px dashed #4FFA7B;
+  background-color: rgba(79, 250, 123, 0.08);
+}
+
+/* Page active button */
+.page-btn-active {
+  background-color: #02BE3B;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.page-btn {
+  color: #898989;
+}
+.page-btn:hover {
+  color: #FFFFFF;
+  background-color: rgba(255, 255, 255, 0.05);
+}

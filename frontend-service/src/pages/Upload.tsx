@@ -103,7 +103,7 @@ const Upload: FC = () => {
           <button
             type="button"
             onClick={() => loadUploads(selectedStatuses, filenameFilter, dateFrom, dateTo)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#D8D8D8] bg-[#2a2a2a] border border-white/10 rounded-lg hover:text-white hover:border-white/30 transition-all"
+            className="btn-reload inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
           >
             <FontAwesomeIcon icon={faRotate} />
             Recarregar

@@ -79,7 +79,7 @@ const DropZone: React.FC<DropZoneProps> = memo(({ onUploadSuccess }) => {
   };
 
   return (
-    <div className="bg-[#1e1e1e] border border-[#2a2a2a] rounded-xl p-5">
+    <div className="bg-surface border border-input rounded-xl p-5">
       <input
         ref={fileInputRef}
         type="file"
@@ -99,29 +99,29 @@ const DropZone: React.FC<DropZoneProps> = memo(({ onUploadSuccess }) => {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={[
-          'flex flex-col items-center justify-center text-center p-10 rounded-lg border-2 border-dashed cursor-pointer transition-colors',
+          'flex flex-col items-center justify-center text-center p-10 rounded-lg cursor-pointer transition-colors',
           isDragOver
-            ? 'border-[#4FFA7B] bg-[rgba(79,250,123,0.08)]'
-            : 'border-[#2a2a2a] hover:border-[#3a3a3a] bg-[#171616]',
+            ? 'dropzone-active'
+            : 'dropzone-idle',
         ].join(' ')}
       >
         <FontAwesomeIcon
           icon={faCloudArrowUp}
-          className={`text-5xl mb-4 ${isDragOver ? 'text-[#4FFA7B]' : 'text-[#3a3a3a]'}`}
+          className={`text-5xl mb-4 ${isDragOver ? 'text-accent' : 'text-hover'}`}
         />
-        <p className="text-[#D8D8D8] font-medium">
+        <p className="text-secondary font-medium">
           Arraste um arquivo CNAB aqui ou clique para selecionar
         </p>
-        <p className="text-[#D8D8D8] text-xs mt-1">Formatos aceitos: .txt, .cnab</p>
+        <p className="text-secondary text-xs mt-1">Formatos aceitos: .txt, .cnab</p>
       </div>
 
       {selectedFile && !uploading && !successMessage && (
-        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-[#171616] rounded-lg border border-[#2a2a2a]">
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-page rounded-lg border border-input">
           <div className="flex items-center gap-3 min-w-0">
-            <FontAwesomeIcon icon={faFile} className="text-[#4FFA7B] shrink-0" />
+            <FontAwesomeIcon icon={faFile} className="text-accent shrink-0" />
             <div className="min-w-0">
-              <p className="text-[#FFFFFF] text-sm font-medium truncate">{selectedFile.name}</p>
-              <p className="text-[#D8D8D8] text-xs">{formatBytes(selectedFile.size)}</p>
+              <p className="text-primary text-sm font-medium truncate">{selectedFile.name}</p>
+              <p className="text-secondary text-xs">{formatBytes(selectedFile.size)}</p>
             </div>
           </div>
           <button
@@ -135,9 +135,9 @@ const DropZone: React.FC<DropZoneProps> = memo(({ onUploadSuccess }) => {
       )}
 
       {uploading && (
-        <div className="mt-4 flex items-center gap-3 p-4 bg-[#171616] rounded-lg border border-[#2a2a2a]">
-          <FontAwesomeIcon icon={faSpinner} className="text-[#4FFA7B] animate-spin" />
-          <p className="text-[#D8D8D8] text-sm">Enviando...</p>
+        <div className="mt-4 flex items-center gap-3 p-4 bg-page rounded-lg border border-input">
+          <FontAwesomeIcon icon={faSpinner} className="text-accent animate-spin" />
+          <p className="text-secondary text-sm">Enviando...</p>
         </div>
       )}
 

@@ -18,7 +18,7 @@ const columns: Column<UploadRow>[] = [
     key: 'original_filename',
     label: 'Arquivo',
     sortable: true,
-    className: 'font-medium text-[#FFFFFF] max-w-[200px] truncate',
+    className: 'font-medium text-primary max-w-[200px] truncate',
   },
   {
     key: 'status',
@@ -38,13 +38,13 @@ const columns: Column<UploadRow>[] = [
     render: (val) =>
       val ? (
         <span
-          className="text-[#FF4444] truncate block max-w-[200px]"
+          className="text-error truncate block max-w-[200px]"
           title={String(val)}
         >
           {String(val)}
         </span>
       ) : (
-        <span className="text-[#898989]">—</span>
+        <span className="text-muted">—</span>
       ),
   },
   {
