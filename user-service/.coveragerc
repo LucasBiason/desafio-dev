@@ -1,0 +1,13 @@
+[run]
+source = .
+omit =
+    */tests/*
+    */migrations/*
+    manage.py
+    core/wsgi.py
+    core/asgi.py
+    tests/conftest.py
+
+[report]
+show_missing = true
+fail_under = 90
