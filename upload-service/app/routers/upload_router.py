@@ -54,12 +54,26 @@ def list_uploads(
     request: Request,
     page: int = 1,
     page_size: int = 20,
+    status: str | None = None,
+    filename: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
     db: Session = Depends(get_db),
 ) -> UploadListResponse:
-    """Lista os uploads do usuário autenticado com paginação."""
+    """Lists authenticated user's uploads with optional filters and pagination."""
     user_data = _get_user(request)
     controller = UploadController(db=db, user_data=user_data)
-    records, total = controller.list_uploads(page=page, page_size=page_size)
+
+    status_list = [s.strip() for s in status.split(",")] if status else None
+
+    records, total = controller.list_uploads(
+        page=page,
+        page_size=page_size,
+        status=status_list,
+        filename=filename,
+        date_from=date_from,
+        date_to=date_to,
+    )
 
     return UploadListResponse(
         count=total,

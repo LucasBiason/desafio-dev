@@ -28,10 +28,26 @@ class UploadController:
         )
         return self.repository.create(upload)
 
-    def list_uploads(self, page: int, page_size: int) -> tuple[list[UploadHistory], int]:
-        """Returns the authenticated user's uploads as a paginated list."""
+    def list_uploads(
+        self,
+        page: int = 1,
+        page_size: int = 20,
+        status: list[str] | None = None,
+        filename: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+    ) -> tuple[list[UploadHistory], int]:
+        """Returns the authenticated user's uploads with optional filters and pagination."""
         user_id = self.user_data.get("id")
-        return self.repository.get_by_user(user_id, page, page_size)
+        return self.repository.list_filtered(
+            user_id=user_id,
+            status=status,
+            filename=filename,
+            date_from=date_from,
+            date_to=date_to,
+            page=page,
+            page_size=page_size,
+        )
 
     def get_upload(self, upload_id: str) -> UploadHistory | None:
         """Returns a single upload record by its UUID string."""
