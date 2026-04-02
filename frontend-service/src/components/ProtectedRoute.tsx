@@ -11,14 +11,14 @@ const ProtectedRoute: FC<ProtectedRouteProps> = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#2e3440] flex items-center justify-center">
+      <div className="min-h-screen bg-[#171616] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="w-10 h-10 border-2 border-[#434c5e] border-t-[#88c0d0] rounded-full animate-spin"
+            className="w-10 h-10 border-2 border-[#2a2a2a] border-t-[#4FFA7B] rounded-full animate-spin"
             role="status"
             aria-label="Carregando..."
           />
-          <span className="text-[#d8dee9] text-sm">Carregando...</span>
+          <span className="text-[#D8D8D8] text-sm">Carregando...</span>
         </div>
       </div>
     );

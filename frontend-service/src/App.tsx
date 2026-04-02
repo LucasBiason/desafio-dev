@@ -13,10 +13,10 @@ function RootRedirect() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center"
-        style={{ background: 'linear-gradient(135deg, #2e3440 0%, #1e2a3a 50%, #2e3440 100%)' }}
+        style={{ background: 'linear-gradient(135deg, #171616 0%, #0d0d0d 50%, #171616 100%)' }}
       >
         <div
-          className="w-10 h-10 border-2 border-[#434c5e] border-t-[#88c0d0] rounded-full animate-spin"
+          className="w-10 h-10 border-2 border-[#2a2a2a] border-t-[#4FFA7B] rounded-full animate-spin"
           role="status"
           aria-label="Carregando..."
         />

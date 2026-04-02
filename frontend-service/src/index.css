@@ -3,52 +3,49 @@
 @theme {
   --font-sans: 'Inter', system-ui, sans-serif;
 
-  /* Nord Polar Night */
-  --color-nord-0: #2e3440;
-  --color-nord-1: #3b4252;
-  --color-nord-2: #434c5e;
-  --color-nord-3: #4c566a;
+  /* bycoders_ Dark */
+  --color-bc-0: #171616;
+  --color-bc-1: #1e1e1e;
+  --color-bc-2: #2a2a2a;
+  --color-bc-3: #3a3a3a;
 
-  /* Nord Snow Storm */
-  --color-nord-4: #d8dee9;
-  --color-nord-5: #e5e9f0;
-  --color-nord-6: #eceff4;
+  /* bycoders_ Text */
+  --color-bc-4: #D8D8D8;
+  --color-bc-5: #E0DCDC;
+  --color-bc-6: #FFFFFF;
 
-  /* Nord Frost */
-  --color-nord-7: #8fbcbb;
-  --color-nord-8: #88c0d0;
-  --color-nord-9: #81a1c1;
-  --color-nord-10: #5e81ac;
+  /* bycoders_ Accent */
+  --color-bc-accent: #4FFA7B;
+  --color-bc-btn: #02BE3B;
+  --color-bc-btn-hover: #029E32;
 
-  /* Nord Aurora */
-  --color-nord-11: #bf616a;
-  --color-nord-12: #d08770;
-  --color-nord-13: #ebcb8b;
-  --color-nord-14: #a3be8c;
-  --color-nord-15: #b48ead;
+  /* bycoders_ Status */
+  --color-bc-error: #FF4444;
+  --color-bc-warning: #FFB800;
+  --color-bc-success: #02BE3B;
 }
 
 body {
   margin: 0;
-  background: linear-gradient(135deg, #2e3440 0%, #1e2a3a 50%, #2e3440 100%);
+  background: linear-gradient(135deg, #171616 0%, #0d0d0d 50%, #171616 100%);
   background-attachment: fixed;
-  color: #eceff4;
+  color: #FFFFFF;
   font-family: var(--font-sans);
   min-height: 100vh;
 }
 
 .glass-card {
-  background: rgba(59, 66, 82, 0.6);
+  background: rgba(30, 30, 30, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(76, 86, 106, 0.3);
+  border: 1px solid rgba(58, 58, 58, 0.3);
   border-radius: 1rem;
   padding: 1.5rem;
 }
 
 .btn-primary {
-  background-color: #5e81ac;
-  color: #eceff4;
+  background-color: #02BE3B;
+  color: #FFFFFF;
   font-weight: 600;
   padding: 0.625rem 1.25rem;
   border-radius: 0.75rem;
@@ -58,7 +55,7 @@ body {
 }
 
 .btn-primary:hover {
-  background-color: #81a1c1;
+  background-color: #029E32;
 }
 
 .btn-primary:disabled {
@@ -70,12 +67,12 @@ body {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-nord-1);
+  background: var(--color-bc-1);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-nord-3);
+  background: var(--color-bc-3);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-nord-9);
+  background: var(--color-bc-btn);
 }
