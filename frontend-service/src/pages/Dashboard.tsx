@@ -64,8 +64,8 @@ const Dashboard: FC = () => {
             title="Total de Transações"
             description="Consulte o histórico completo de transações processadas."
             icon={<FontAwesomeIcon icon={faMoneyBillTransfer} size="lg" />}
-            linkTo="/history"
-            linkLabel="Ver histórico"
+            linkTo="/upload"
+            linkLabel="Ver uploads"
           />
         </div>
       </div>
