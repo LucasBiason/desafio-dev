@@ -17,6 +17,7 @@ import {
   faAnglesLeft,
   faAnglesRight,
   faXmark,
+  faRotate,
 } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../components/Layout';
 import { uploadService } from '../services/uploadService';
@@ -58,7 +59,7 @@ const STATUS_CHIPS: { value: UploadResponse['status']; label: string; color: str
 const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
 
 // Auto-refresh interval in milliseconds
-const POLL_INTERVAL_MS = 10_000;
+const POLL_INTERVAL_MS = 600_000; // 10 minutes
 
 // Columns that support sorting
 type SortKey = 'original_filename' | 'status' | 'total_transactions' | 'created_at';
@@ -469,7 +470,17 @@ const Upload: FC = () => {
         </div>
 
         {/* History section title */}
-        <h3 className="text-[#FFFFFF] text-base font-semibold">Histórico de Uploads</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-[#FFFFFF] text-base font-semibold">Histórico de Uploads</h3>
+          <button
+            type="button"
+            onClick={() => loadUploads(selectedStatuses, filenameFilter, dateFrom, dateTo)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#D8D8D8] bg-[#2a2a2a] border border-white/10 rounded-lg hover:text-white hover:border-white/30 transition-all"
+          >
+            <FontAwesomeIcon icon={faRotate} />
+            Recarregar
+          </button>
+        </div>
 
         {/* Filter panel: status chips + additional filters */}
         <div className="bg-[#1e1e1e] border border-white/5 rounded-xl p-4 space-y-4">
