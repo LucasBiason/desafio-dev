@@ -44,13 +44,19 @@ echo -e "${GREEN}User-service migrations applied.${NC}"
 echo ""
 
 # 5. Apply cnab-service migrations (SQL + seed)
-echo -e "${CYAN}[5/6] Applying cnab-service migrations...${NC}"
+echo -e "${CYAN}[5/7] Applying cnab-service migrations...${NC}"
 $COMPOSE exec cnab-service /entrypoint.sh migrate
 echo -e "${GREEN}CNAB-service migrations applied.${NC}"
 echo ""
 
+# 5b. Apply upload-service migrations
+echo -e "${CYAN}[5b/7] Applying upload-service migrations...${NC}"
+$COMPOSE exec upload-service /entrypoint.sh migrate
+echo -e "${GREEN}Upload-service migrations applied.${NC}"
+echo ""
+
 # 6. Create admin superuser
-echo -e "${CYAN}[6/6] Creating admin user...${NC}"
+echo -e "${CYAN}[6/7] Creating admin user...${NC}"
 $COMPOSE exec user-service python manage.py shell -c "
 from users.models.user import User
 if not User.objects.filter(username='admin').exists():
@@ -64,10 +70,11 @@ echo ""
 # Done
 echo -e "${GREEN}=== Setup complete ===${NC}"
 echo ""
-echo "  Frontend:     http://localhost:7000"
-echo "  User Service: http://localhost:7001"
-echo "  CNAB Service: http://localhost:7002"
-echo "  Swagger:      http://localhost:7001/swagger/"
+echo "  Frontend:       http://localhost:7000"
+echo "  User Service:   http://localhost:7001"
+echo "  CNAB Service:   http://localhost:7002"
+echo "  Upload Service: http://localhost:7003"
+echo "  Swagger:        http://localhost:7001/swagger/"
 echo ""
 echo "  Login: admin / admin123"
 echo ""
