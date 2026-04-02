@@ -16,6 +16,7 @@ import {
   faChevronRight,
   faAnglesLeft,
   faAnglesRight,
+  faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../components/Layout';
 import { uploadService } from '../services/uploadService';
@@ -45,13 +46,12 @@ const STATUS_ICONS: Record<UploadResponse['status'], typeof faHourglass> = {
   failed: faCircleXmark,
 };
 
-// Status filter options shown in the dropdown
-const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'Todos' },
-  { value: 'pending', label: 'Pendente' },
-  { value: 'processing', label: 'Processando' },
-  { value: 'completed', label: 'Concluído' },
-  { value: 'failed', label: 'Falhou' },
+// Status chip definitions: API value, label, and bycoders_ brand color
+const STATUS_CHIPS: { value: UploadResponse['status']; label: string; color: string }[] = [
+  { value: 'pending', label: 'Pendente', color: '#FFB800' },
+  { value: 'processing', label: 'Processando', color: '#4FFA7B' },
+  { value: 'completed', label: 'Concluído', color: '#02BE3B' },
+  { value: 'failed', label: 'Falhou', color: '#FF4444' },
 ];
 
 // Available page size choices for the table toolbar
@@ -77,6 +77,31 @@ function formatDate(iso: string): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+// Chip component matching the portfolio multi-select pattern
+interface ChipProps {
+  label: string;
+  color: string;
+  active: boolean;
+  onClick: () => void;
+}
+
+const Chip: FC<ChipProps> = ({ label, color, active, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+      active
+        ? 'text-white border'
+        : 'bg-transparent text-[#D8D8D8] border border-white/10 hover:border-white/30 hover:text-white'
+    }`}
+    style={active ? { backgroundColor: `${color}30`, color, borderColor: `${color}50` } : {}}
+    aria-pressed={active}
+  >
+    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+    {label}
+  </button>
+);
 
 interface StatusBadgeProps {
   status: UploadResponse['status'];
@@ -145,64 +170,87 @@ const Upload: FC = () => {
   // DataTable state
   const [uploads, setUploads] = useState<UploadResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[1]);
 
-  // Fetch all uploads for the selected status from the API
-  // We use a large page_size (1000) so client-side search and pagination work on the full dataset
-  const loadUploads = useCallback(async (status: string) => {
-    try {
-      setLoading(true);
-      const data = await uploadService.list(1, 1000, status || undefined);
-      setUploads(data.results);
-    } catch {
-      setUploads([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Multi-select status chip filter
+  const [selectedStatuses, setSelectedStatuses] = useState<UploadResponse['status'][]>([]);
 
-  // Initial fetch and refetch on status filter change
+  // Filename filter with debounce (input value vs applied value)
+  const [filenameInput, setFilenameInput] = useState('');
+  const [filenameFilter, setFilenameFilter] = useState('');
+
+  // Date range filters
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  // Debounce filename input: apply after 300ms of inactivity
   useEffect(() => {
-    loadUploads(statusFilter);
-    setCurrentPage(1);
-    setSearchQuery('');
-  }, [statusFilter, loadUploads]);
+    const timer = setTimeout(() => setFilenameFilter(filenameInput), 300);
+    return () => clearTimeout(timer);
+  }, [filenameInput]);
 
-  // Auto-refresh polling to catch status changes (pending -> processing -> completed)
+  // Fetch uploads from backend using all active filters
+  const loadUploads = useCallback(
+    async (statuses: UploadResponse['status'][], filename: string, from: string, to: string) => {
+      try {
+        setLoading(true);
+        const data = await uploadService.list(1, 1000, {
+          status: statuses.length > 0 ? statuses.join(',') : undefined,
+          filename: filename || undefined,
+          date_from: from || undefined,
+          date_to: to || undefined,
+        });
+        setUploads(data.results);
+      } catch {
+        setUploads([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  // Refetch whenever any filter changes, and reset to page 1
+  useEffect(() => {
+    setCurrentPage(1);
+    loadUploads(selectedStatuses, filenameFilter, dateFrom, dateTo);
+  }, [selectedStatuses, filenameFilter, dateFrom, dateTo, loadUploads]);
+
+  // Auto-refresh polling to catch status transitions (pending -> processing -> completed)
   useEffect(() => {
     const interval = setInterval(() => {
-      loadUploads(statusFilter);
+      loadUploads(selectedStatuses, filenameFilter, dateFrom, dateTo);
     }, POLL_INTERVAL_MS);
-
     return () => clearInterval(interval);
-  }, [loadUploads, statusFilter]);
+  }, [loadUploads, selectedStatuses, filenameFilter, dateFrom, dateTo]);
 
-  // Apply text search filter client-side
-  const filteredUploads = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return uploads;
-    return uploads.filter(
-      (u) =>
-        u.original_filename.toLowerCase().includes(q) ||
-        STATUS_LABELS[u.status].toLowerCase().includes(q),
+  // Toggle a status chip: add if absent, remove if already selected
+  const handleChipToggle = (value: UploadResponse['status']) => {
+    setSelectedStatuses((prev) =>
+      prev.includes(value) ? prev.filter((s) => s !== value) : [...prev, value],
     );
-  }, [uploads, searchQuery]);
+  };
 
-  // Apply client-side sorting
+  // Clear all status chips at once
+  const handleClearStatuses = () => {
+    setSelectedStatuses([]);
+  };
+
+  // Apply client-side sorting on the results returned by the backend
   const sortedUploads = useMemo(() => {
-    return [...filteredUploads].sort((a, b) => {
+    return [...uploads].sort((a, b) => {
       let valA: string | number = a[sortKey] ?? '';
       let valB: string | number = b[sortKey] ?? '';
 
       if (sortKey === 'total_transactions') {
         valA = Number(valA);
         valB = Number(valB);
-        return sortDir === 'asc' ? (valA as number) - (valB as number) : (valB as number) - (valA as number);
+        return sortDir === 'asc'
+          ? (valA as number) - (valB as number)
+          : (valB as number) - (valA as number);
       }
 
       // String comparison for other columns
@@ -212,7 +260,7 @@ const Upload: FC = () => {
       if (valA > valB) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [filteredUploads, sortKey, sortDir]);
+  }, [uploads, sortKey, sortDir]);
 
   // Pagination calculations derived from sorted data
   const totalFiltered = sortedUploads.length;
@@ -240,15 +288,6 @@ const Upload: FC = () => {
       setSortDir('asc');
     }
     setCurrentPage(1);
-  };
-
-  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleStatusChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    setStatusFilter(e.target.value);
   };
 
   const handlePageSizeChange = (e: ChangeEvent<HTMLSelectElement>) => {
@@ -318,13 +357,21 @@ const Upload: FC = () => {
       // Reset the hidden file input so the same file can be selected again
       if (fileInputRef.current) fileInputRef.current.value = '';
       // Refresh the DataTable to show the new upload
-      await loadUploads(statusFilter);
+      await loadUploads(selectedStatuses, filenameFilter, dateFrom, dateTo);
     } catch {
       setErrorMessage('Ocorreu um erro ao enviar o arquivo. Tente novamente.');
     } finally {
       setUploading(false);
     }
   };
+
+  // Determine which empty-state message to show based on active filters
+  const emptyStateMessage = useMemo(() => {
+    if (selectedStatuses.length > 0 || filenameFilter || dateFrom || dateTo) {
+      return 'Nenhum resultado para os filtros selecionados.';
+    }
+    return 'Importe um arquivo CNAB para começar.';
+  }, [selectedStatuses, filenameFilter, dateFrom, dateTo]);
 
   return (
     <Layout>
@@ -421,49 +468,91 @@ const Upload: FC = () => {
           )}
         </div>
 
-        {/* History section header with status filter */}
-        <div className="flex items-center justify-between">
-          <h3 className="text-[#FFFFFF] text-base font-semibold">Histórico de Uploads</h3>
-          <div className="flex items-center gap-2">
-            <label htmlFor="status-filter" className="text-[#D8D8D8] text-sm shrink-0">
-              Status:
-            </label>
-            <select
-              id="status-filter"
-              value={statusFilter}
-              onChange={handleStatusChange}
-              className="bg-[#2a2a2a] border border-[#3a3a3a] text-[#FFFFFF] text-sm rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#4FFA7B] cursor-pointer"
-              aria-label="Filtrar por status"
-            >
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
+        {/* History section title */}
+        <h3 className="text-[#FFFFFF] text-base font-semibold">Histórico de Uploads</h3>
+
+        {/* Filter panel: status chips + additional filters */}
+        <div className="bg-[#1e1e1e] border border-white/5 rounded-xl p-4 space-y-4">
+          {/* Status chip row */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#898989] mb-2">
+              Status
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {STATUS_CHIPS.map((chip) => (
+                <Chip
+                  key={chip.value}
+                  label={chip.label}
+                  color={chip.color}
+                  active={selectedStatuses.includes(chip.value)}
+                  onClick={() => handleChipToggle(chip.value)}
+                />
               ))}
-            </select>
+
+              {/* Clear button: only visible when at least one chip is active */}
+              {selectedStatuses.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearStatuses}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-[#898989] hover:text-white border border-white/5 hover:border-white/20 transition-all"
+                  aria-label="Limpar filtros de status"
+                >
+                  <FontAwesomeIcon icon={faXmark} className="text-[10px]" aria-hidden="true" />
+                  Limpar
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Additional filters row: filename search + date range */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#898989] mb-2">
+              Filtros
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Filename search with debounce */}
+              <div className="relative flex-1 max-w-sm">
+                <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-[#898989]">
+                  <FontAwesomeIcon icon={faMagnifyingGlass} className="text-xs" aria-hidden="true" />
+                </span>
+                <input
+                  type="search"
+                  placeholder="Nome do arquivo..."
+                  value={filenameInput}
+                  onChange={(e) => setFilenameInput(e.target.value)}
+                  className="w-full bg-[#171616] border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-sm text-white placeholder-[#898989] focus:outline-none focus:ring-1 focus:ring-[#4FFA7B]"
+                  aria-label="Buscar por nome do arquivo"
+                />
+              </div>
+
+              {/* Date from */}
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="bg-[#171616] border border-white/10 rounded-lg text-sm text-white px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#4FFA7B] [color-scheme:dark]"
+                aria-label="Data início"
+                title="Data início"
+              />
+
+              {/* Date to */}
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="bg-[#171616] border border-white/10 rounded-lg text-sm text-white px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#4FFA7B] [color-scheme:dark]"
+                aria-label="Data fim"
+                title="Data fim"
+              />
+            </div>
           </div>
         </div>
 
         {/* DataTable container */}
         <div className="bg-[#1e1e1e] border border-white/5 rounded-xl overflow-hidden">
 
-          {/* Table toolbar: search on left, page size on right */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 border-b border-white/5">
-            {/* Search input */}
-            <div className="relative flex-1 max-w-xs">
-              <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-[#898989]">
-                <FontAwesomeIcon icon={faMagnifyingGlass} className="text-xs" aria-hidden="true" />
-              </span>
-              <input
-                type="search"
-                placeholder="Buscar por arquivo ou status..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="w-full bg-[#171616] border border-white/10 rounded-lg pl-8 pr-3 py-2 text-sm text-white placeholder-[#898989] focus:outline-none focus:ring-1 focus:ring-[#4FFA7B]"
-                aria-label="Buscar uploads"
-              />
-            </div>
-
+          {/* Table toolbar: page size selector on the right */}
+          <div className="flex items-center justify-end gap-3 px-4 py-3 border-b border-white/5">
             {/* Page size selector */}
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-[#898989] text-xs">Exibir</span>
@@ -515,16 +604,8 @@ const Upload: FC = () => {
                           className="text-[#D8D8D8] text-4xl opacity-30"
                           aria-hidden="true"
                         />
-                        <p className="text-[#D8D8D8] font-medium">
-                          Nenhum upload encontrado
-                        </p>
-                        <p className="text-[#898989] text-sm">
-                          {searchQuery
-                            ? 'Nenhum resultado para a busca realizada.'
-                            : statusFilter
-                            ? 'Nenhum upload com o status selecionado.'
-                            : 'Importe um arquivo CNAB para começar.'}
-                        </p>
+                        <p className="text-[#D8D8D8] font-medium">Nenhum upload encontrado</p>
+                        <p className="text-[#898989] text-sm">{emptyStateMessage}</p>
                       </div>
                     </td>
                   </tr>
