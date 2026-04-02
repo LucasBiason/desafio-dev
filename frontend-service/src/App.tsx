@@ -5,7 +5,6 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Upload from './pages/Upload';
 import Stores from './pages/Stores';
-import History from './pages/History';
 
 function RootRedirect() {
   const { isAuthenticated, loading } = useAuth();
@@ -63,14 +62,8 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/history"
-            element={
-              <ProtectedRoute>
-                <History />
-              </ProtectedRoute>
-            }
-          />
+          {/* Redirect old /history bookmarks to /upload */}
+          <Route path="/history" element={<Navigate to="/upload" replace />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

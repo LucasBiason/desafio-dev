@@ -38,6 +38,10 @@ case "${1:-}" in
     WORKERS=${WORKERS:-4}
     exec uvicorn app.main:app --host 0.0.0.0 --port "$PORT" --workers $WORKERS --log-level info
     ;;
+  worker)
+    echo "Starting upload worker (polling every ${WORKER_POLL_INTERVAL:-10}s)"
+    exec python -m app.worker
+    ;;
   *)
     cli_help
     ;;

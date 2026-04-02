@@ -21,6 +21,15 @@ class UploadHistoryRepository(BaseRepository[UploadHistory]):
         records = query.order_by(UploadHistory.created_at.desc()).offset(offset).limit(page_size).all()
         return records, total
 
+    def get_pending(self) -> list:
+        """Return all uploads with status 'pending', ordered by created_at."""
+        return (
+            self.db.query(self.model_class)
+            .filter(self.model_class.status == "pending")
+            .order_by(self.model_class.created_at.asc())
+            .all()
+        )
+
     def update_status(
         self,
         upload: UploadHistory,

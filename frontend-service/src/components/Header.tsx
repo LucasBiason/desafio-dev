@@ -5,9 +5,8 @@ import { useAuth } from '../hooks/useAuth';
 
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
-  '/upload': 'Upload de Arquivo',
+  '/upload': 'Upload de Arquivos',
   '/stores': 'Lojas',
-  '/history': 'Histórico',
 };
 
 const Header: FC = memo(() => {

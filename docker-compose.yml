@@ -126,6 +126,27 @@ services:
       - ./upload-service/app:/app/app
       - upload_data:/app/uploads
 
+  upload-worker:
+    build:
+      context: .
+      dockerfile: upload-service/Dockerfile
+      target: test
+    container_name: desafio-dev-upload-worker
+    command: ["worker"]
+    env_file:
+      - configs/.env
+    environment:
+      - DATABASE_URL=${UPLOAD_DATABASE_URL:-postgresql://cnab:cnab123@db:5432/cnab_uploads}
+      - WORKER_POLL_INTERVAL=10
+    depends_on:
+      db:
+        condition: service_healthy
+      upload-service:
+        condition: service_healthy
+    volumes:
+      - ./upload-service/app:/app/app
+      - upload_data:/app/uploads
+
   # ============================================
   # Frontend
   # ============================================

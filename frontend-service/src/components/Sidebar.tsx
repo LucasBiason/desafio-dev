@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 import type { FC } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faGauge, faCloudArrowUp, faStore, faClockRotateLeft, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
+import { faGauge, faCloudArrowUp, faStore, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../hooks/useAuth';
 
 interface NavItemProps {
@@ -59,11 +59,6 @@ const Sidebar: FC = memo(() => {
           to="/stores"
           label="Lojas"
           icon={<FontAwesomeIcon icon={faStore} size="lg" />}
-        />
-        <NavItem
-          to="/history"
-          label="Histórico"
-          icon={<FontAwesomeIcon icon={faClockRotateLeft} size="lg" />}
         />
       </nav>
 

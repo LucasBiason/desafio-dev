@@ -2,7 +2,7 @@
 # CNAB Parser - Makefile
 # ============================================
 
-.PHONY: help up down build restart logs migrate test lint shell-user shell-cnab shell-upload
+.PHONY: help up down build restart logs migrate test lint shell-user shell-cnab shell-upload logs-worker
 
 # Colors
 GREEN  := \033[0;32m
@@ -64,6 +64,9 @@ logs-upload: ## Show upload-service logs
 
 logs-frontend: ## Show frontend logs
 	$(COMPOSE) logs -f frontend
+
+logs-worker: ## Show upload-worker logs
+	$(COMPOSE) logs -f upload-worker
 
 # ============================================
 # Migrations

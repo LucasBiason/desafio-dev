@@ -2,14 +2,13 @@
 
 import os
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
 from cnab_shared import ResourceNotFoundError, get_db
 
 from app.controllers.upload_controller import UploadController
 from app.schemas.upload_schema import UploadListResponse, UploadResponse
-from app.tasks.process_upload import process_upload_task
 from app.services.file_storage import FileStorage
 
 ALLOWED_EXTENSIONS = {".txt", ".cnab"}
@@ -25,11 +24,10 @@ def _get_user(request: Request) -> dict:
 @upload_router.post("/upload/", response_model=UploadResponse, status_code=201)
 def upload_cnab_file(
     request: Request,
-    background_tasks: BackgroundTasks,
     file: UploadFile,
     db: Session = Depends(get_db),
 ) -> UploadResponse:
-    """Recebe um arquivo CNAB, salva em disco e inicia o processamento em background."""
+    """Saves a CNAB file to disk and creates a pending upload record for the worker."""
     filename = file.filename or "upload.txt"
     ext = os.path.splitext(filename)[-1].lower()
 
@@ -47,9 +45,6 @@ def upload_cnab_file(
     user_data = _get_user(request)
     controller = UploadController(db=db, user_data=user_data)
     upload = controller.create_upload(filename=filename, file_path=file_path)
-
-    db_url = os.environ.get("DATABASE_URL", "")
-    background_tasks.add_task(process_upload_task, str(upload.id), db_url)
 
     return UploadResponse.model_validate(upload)
 
