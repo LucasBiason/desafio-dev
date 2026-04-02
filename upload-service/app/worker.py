@@ -1,4 +1,4 @@
-"""Worker that processes pending CNAB uploads."""
+"""Worker entry point — starts the polling loop for background processing."""
 
 import logging
 import os
@@ -8,81 +8,52 @@ import time
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.repositories.upload_history_repository import UploadHistoryRepository
-from app.services.cnab_parser import CnabParser
-from app.services.cnab_service_client import CnabServiceClient
-from app.services.file_storage import FileStorage
+from app.tasks.process_upload import process_pending_uploads
 
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL = int(os.environ.get("WORKER_POLL_INTERVAL", "10"))
-
-running = True
-
-
-def handle_signal(signum, frame):
-    global running
-    logger.info("Received signal %s, shutting down...", signum)
-    running = False
+_running = True
 
 
-signal.signal(signal.SIGTERM, handle_signal)
-signal.signal(signal.SIGINT, handle_signal)
+def _handle_signal(signum, _frame):
+    global _running
+    logger.info("Signal %s received, stopping...", signum)
+    _running = False
 
 
-def process_single_upload(db, upload):
-    """Process one upload: parse file and send to cnab-service."""
-    repo = UploadHistoryRepository(db)
-    repo.update_status(upload, "processing")
-
-    try:
-        storage = FileStorage()
-        content = storage.read(upload.file_path)
-
-        parser = CnabParser()
-        transactions = parser.parse(content)
-
-        client = CnabServiceClient()
-        client.create_transactions(str(upload.id), transactions)
-
-        repo.update_status(upload, "completed", total_transactions=len(transactions))
-        logger.info("Upload %s completed: %d transactions", upload.id, len(transactions))
-    except Exception as exc:
-        repo.update_status(upload, "failed", error_message=str(exc))
-        logger.error("Upload %s failed: %s", upload.id, exc)
+def _sleep(seconds: int) -> None:
+    """Interruptible sleep for graceful shutdown."""
+    for _ in range(seconds):
+        if not _running:
+            break
+        time.sleep(1)
 
 
-def run():
-    """Main worker loop."""
+def run() -> None:
+    """Initialize DB connection and start the polling loop."""
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
         logger.error("DATABASE_URL not set")
         return
 
     engine = create_engine(database_url)
-    SessionLocal = sessionmaker(bind=engine)
+    Session = sessionmaker(bind=engine)
+
+    signal.signal(signal.SIGTERM, _handle_signal)
+    signal.signal(signal.SIGINT, _handle_signal)
 
     logger.info("Worker started (polling every %ds)", POLL_INTERVAL)
 
-    while running:
-        db = SessionLocal()
+    while _running:
+        db = Session()
         try:
-            repo = UploadHistoryRepository(db)
-            pending = repo.get_pending()
-
-            if pending:
-                logger.info("Found %d pending upload(s)", len(pending))
-                for upload in pending:
-                    process_single_upload(db, upload)
+            process_pending_uploads(db)
         except Exception as exc:
-            logger.error("Worker error: %s", exc)
+            logger.error("Worker cycle error: %s", exc)
         finally:
             db.close()
-
-        for _ in range(POLL_INTERVAL):
-            if not running:
-                break
-            time.sleep(1)
+        _sleep(POLL_INTERVAL)
 
     logger.info("Worker stopped.")
 
