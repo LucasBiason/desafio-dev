@@ -13,19 +13,19 @@ interface SummaryCardProps {
 }
 
 const SummaryCard: FC<SummaryCardProps> = ({ title, description, icon, linkTo, linkLabel }) => (
-  <div className="bg-[#1e1e1e] border border-[#2a2a2a] rounded-xl p-5 flex flex-col gap-4">
+  <div className="bg-surface border border-input rounded-xl p-5 flex flex-col gap-4">
     <div className="flex items-start justify-between">
       <div>
         <h3 className="section-title">{title}</h3>
-        <p className="text-[#D8D8D8] text-sm mt-1">{description}</p>
+        <p className="text-secondary text-sm mt-1">{description}</p>
       </div>
-      <div className="w-10 h-10 rounded-lg bg-[#2a2a2a] flex items-center justify-center text-[#4FFA7B] shrink-0">
+      <div className="w-10 h-10 rounded-lg bg-input flex items-center justify-center text-accent shrink-0">
         {icon}
       </div>
     </div>
     <Link
       to={linkTo}
-      className="inline-flex items-center gap-1.5 text-[#4FFA7B] hover:text-[#02BE3B] text-sm font-medium transition-colors"
+      className="inline-flex items-center gap-1.5 text-accent hover:text-success text-sm font-medium transition-colors"
     >
       {linkLabel}
       <FontAwesomeIcon icon={faChevronRight} size="xs" />

@@ -16,7 +16,7 @@ const Login: React.FC = () => {
 
   const sessionExpired = searchParams.get('session_expired') === 'true';
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -42,14 +42,14 @@ const Login: React.FC = () => {
         {/* Logo and title */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 glass-circle">
-            <FontAwesomeIcon icon={faFileLines} size="2x" className="text-[#4FFA7B]" aria-hidden="true" />
+            <FontAwesomeIcon icon={faFileLines} size="2x" className="text-accent" aria-hidden="true" />
           </div>
 
           <h1 className="text-3xl font-bold tracking-tight mb-2 gradient-text">
             CNAB Parser
           </h1>
 
-          <p className="text-sm text-[#D8D8D8]">
+          <p className="text-sm text-secondary">
             Importação e análise de transações CNAB
           </p>
         </div>
@@ -85,7 +85,7 @@ const Login: React.FC = () => {
             <div>
               <label
                 htmlFor="username"
-                className="block text-sm font-medium mb-1.5 text-[#D8D8D8]"
+                className="block text-sm font-medium mb-1.5 text-secondary"
               >
                 Usuário
               </label>
@@ -106,7 +106,7 @@ const Login: React.FC = () => {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium mb-1.5 text-[#D8D8D8]"
+                className="block text-sm font-medium mb-1.5 text-secondary"
               >
                 Senha
               </label>
@@ -142,7 +142,7 @@ const Login: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <p className="text-center mt-6 text-xs text-[#3a3a3a]">
+        <p className="text-center mt-6 text-xs text-dim">
           v0.1.0
         </p>
       </div>

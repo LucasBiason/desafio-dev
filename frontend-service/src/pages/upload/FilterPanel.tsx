@@ -35,9 +35,9 @@ const FilterPanel: FC<FilterPanelProps> = memo(({
   dateTo,
   onDateToChange,
 }) => (
-  <div className="bg-[#1e1e1e] border border-white/5 rounded-xl p-4 space-y-4">
+  <div className="bg-surface border border-white/5 rounded-xl p-4 space-y-4">
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wider text-[#898989] mb-2">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
         Status
       </p>
       <div className="flex flex-wrap items-center gap-2">
@@ -56,7 +56,7 @@ const FilterPanel: FC<FilterPanelProps> = memo(({
           <button
             type="button"
             onClick={onClearStatuses}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-[#898989] hover:text-white border border-white/5 hover:border-white/20 transition-all"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium text-muted hover:text-white border border-white/5 hover:border-white/20 transition-all"
             aria-label="Limpar filtros de status"
           >
             <FontAwesomeIcon icon={faXmark} className="text-[10px]" aria-hidden="true" />
@@ -67,12 +67,12 @@ const FilterPanel: FC<FilterPanelProps> = memo(({
     </div>
 
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wider text-[#898989] mb-2">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
         Filtros
       </p>
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
-          <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-[#898989]">
+          <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-muted">
             <FontAwesomeIcon icon={faMagnifyingGlass} className="text-xs" aria-hidden="true" />
           </span>
           <input
@@ -80,7 +80,7 @@ const FilterPanel: FC<FilterPanelProps> = memo(({
             placeholder="Nome do arquivo..."
             value={filenameInput}
             onChange={(e) => onFilenameChange(e.target.value)}
-            className="w-full filter-input rounded-lg pl-8 pr-3 py-1.5 text-sm placeholder-[#898989] [color-scheme:dark]"
+            className="w-full filter-input rounded-lg pl-8 pr-3 py-1.5 text-sm placeholder-muted [color-scheme:dark]"
             aria-label="Buscar por nome do arquivo"
           />
         </div>

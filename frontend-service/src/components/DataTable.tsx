@@ -47,7 +47,7 @@ const SortIcon: React.FC<SortIconProps> = ({ columnKey, sortKey, sortDir }) => {
     return (
       <FontAwesomeIcon
         icon={faChevronDown}
-        className="ml-1 text-[#3a3a3a] text-[10px]"
+        className="ml-1 sort-icon-inactive text-[10px]"
         aria-hidden="true"
       />
     );
@@ -55,7 +55,7 @@ const SortIcon: React.FC<SortIconProps> = ({ columnKey, sortKey, sortDir }) => {
   return (
     <FontAwesomeIcon
       icon={sortDir === 'asc' ? faChevronUp : faChevronDown}
-      className="ml-1 text-[#4FFA7B] text-[10px]"
+      className="ml-1 sort-icon-active text-[10px]"
       aria-hidden="true"
     />
   );
@@ -140,10 +140,10 @@ function DataTable<T extends Record<string, unknown>>({
   const resolvedEmptyIcon = emptyIcon ?? faBoxOpen;
 
   return (
-    <div className="bg-[#1e1e1e] border border-white/5 rounded-xl overflow-hidden">
+    <div className="bg-surface border border-white/5 rounded-xl overflow-hidden">
       <div className="flex items-center justify-end gap-3 px-4 py-3 border-b border-white/5">
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[#898989] text-xs">Exibir</span>
+          <span className="text-muted text-xs">Exibir</span>
           <select
             value={pageSize}
             onChange={handlePageSizeChange}
@@ -156,20 +156,20 @@ function DataTable<T extends Record<string, unknown>>({
               </option>
             ))}
           </select>
-          <span className="text-[#898989] text-xs">por página</span>
+          <span className="text-muted text-xs">por página</span>
         </div>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-white/5 bg-[#171616]/50">
+            <tr className="border-b border-white/5 bg-page-dim">
               {columns.map((col) =>
                 col.sortable ? (
                   <th
                     key={col.key}
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#898989] cursor-pointer hover:text-white select-none transition-colors"
+                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted cursor-pointer hover:text-white select-none transition-colors"
                     onClick={() => handleSortColumn(col.key)}
                     aria-sort={
                       sortKey === col.key
@@ -192,7 +192,7 @@ function DataTable<T extends Record<string, unknown>>({
                   <th
                     key={col.key}
                     scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#898989] select-none"
+                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted select-none"
                   >
                     {col.label}
                   </th>
@@ -207,7 +207,7 @@ function DataTable<T extends Record<string, unknown>>({
                   {Array.from({ length: skeletonColumnCount }).map((_, colIndex) => (
                     <td key={colIndex} className="px-4 py-3">
                       <div
-                        className={`h-3 bg-[#2a2a2a] rounded ${
+                        className={`h-3 skeleton rounded ${
                           colIndex % 3 === 0
                             ? 'w-[60%]'
                             : colIndex % 3 === 1
@@ -225,12 +225,12 @@ function DataTable<T extends Record<string, unknown>>({
                   <div className="flex flex-col items-center gap-3">
                     <FontAwesomeIcon
                       icon={resolvedEmptyIcon}
-                      className="text-[#D8D8D8] text-4xl opacity-30"
+                      className="text-secondary text-4xl opacity-30"
                       aria-hidden="true"
                     />
-                    <p className="text-[#D8D8D8] font-medium">Nenhum registro encontrado</p>
+                    <p className="text-secondary font-medium">Nenhum registro encontrado</p>
                     {emptyMessage && (
-                      <p className="text-[#898989] text-sm">{emptyMessage}</p>
+                      <p className="text-muted text-sm">{emptyMessage}</p>
                     )}
                   </div>
                 </td>
@@ -248,7 +248,7 @@ function DataTable<T extends Record<string, unknown>>({
                       return (
                         <td
                           key={col.key}
-                          className={`px-4 py-3 text-sm text-[#D8D8D8]${col.className ? ` ${col.className}` : ''}`}
+                          className={`px-4 py-3 text-sm text-secondary${col.className ? ` ${col.className}` : ''}`}
                           title={
                             col.className?.includes('truncate') && typeof value === 'string'
                               ? value
@@ -269,7 +269,7 @@ function DataTable<T extends Record<string, unknown>>({
 
       {!loading && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 border-t border-white/5">
-          <p className="text-xs text-[#898989]">
+          <p className="text-xs text-muted">
             {totalFiltered === 0
               ? 'Nenhum registro encontrado'
               : `Exibindo ${startIndex + 1}–${endIndex} de ${totalFiltered} registro${totalFiltered !== 1 ? 's' : ''}`}
@@ -280,7 +280,7 @@ function DataTable<T extends Record<string, unknown>>({
               <button
                 onClick={() => setCurrentPage(1)}
                 disabled={safePage === 1}
-                className="w-8 h-8 flex items-center justify-center text-[#898989] hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="w-8 h-8 flex items-center justify-center text-muted hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Primeira página"
               >
                 <FontAwesomeIcon icon={faAnglesLeft} className="text-xs" aria-hidden="true" />
@@ -289,7 +289,7 @@ function DataTable<T extends Record<string, unknown>>({
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={safePage === 1}
-                className="w-8 h-8 flex items-center justify-center text-[#898989] hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="w-8 h-8 flex items-center justify-center text-muted hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Página anterior"
               >
                 <FontAwesomeIcon icon={faChevronLeft} className="text-xs" aria-hidden="true" />
@@ -302,8 +302,8 @@ function DataTable<T extends Record<string, unknown>>({
                   className={[
                     'w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-colors',
                     num === safePage
-                      ? 'bg-[#02BE3B] text-white font-semibold'
-                      : 'text-[#898989] hover:text-white hover:bg-white/5',
+                      ? 'page-btn-active'
+                      : 'page-btn hover:bg-white/5',
                   ].join(' ')}
                   aria-label={`Página ${num}`}
                   aria-current={num === safePage ? 'page' : undefined}
@@ -315,7 +315,7 @@ function DataTable<T extends Record<string, unknown>>({
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={safePage === totalPages}
-                className="w-8 h-8 flex items-center justify-center text-[#898989] hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="w-8 h-8 flex items-center justify-center text-muted hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Próxima página"
               >
                 <FontAwesomeIcon icon={faChevronRight} className="text-xs" aria-hidden="true" />
@@ -324,7 +324,7 @@ function DataTable<T extends Record<string, unknown>>({
               <button
                 onClick={() => setCurrentPage(totalPages)}
                 disabled={safePage === totalPages}
-                className="w-8 h-8 flex items-center justify-center text-[#898989] hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="w-8 h-8 flex items-center justify-center text-muted hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Última página"
               >
                 <FontAwesomeIcon icon={faAnglesRight} className="text-xs" aria-hidden="true" />
