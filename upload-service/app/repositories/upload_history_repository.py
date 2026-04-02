@@ -10,8 +10,6 @@ from app.models.upload_history import UploadHistory
 
 
 class UploadHistoryRepository(BaseRepository[UploadHistory]):
-    """Handles all database operations for UploadHistory records."""
-
     def __init__(self, db: Session) -> None:
         super().__init__(db, UploadHistory)
 
@@ -80,7 +78,7 @@ class UploadHistoryRepository(BaseRepository[UploadHistory]):
         error_message: str | None = None,
         total_transactions: int | None = None,
     ) -> UploadHistory:
-        """Updates status fields on an upload record and persists the changes."""
+        """Updates upload status and commits."""
         upload.status = status
         if error_message is not None:
             upload.error_message = error_message

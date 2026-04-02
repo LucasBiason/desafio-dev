@@ -12,7 +12,6 @@ upload_router = APIRouter(tags=["Uploads"])
 
 
 def _get_user(request: Request) -> dict:
-    """Extracts user data from request state (set by AuthMiddleware)."""
     return request.state.user
 
 

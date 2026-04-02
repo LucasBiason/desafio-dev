@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class UploadController:
-    """Coordinates upload validation, storage, listing and processing."""
+    """Upload validation, file storage, and processing lifecycle."""
 
     def __init__(self, db: Session, user_data: dict) -> None:
         self.db = db
