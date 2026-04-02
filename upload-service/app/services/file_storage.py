@@ -6,8 +6,6 @@ from pathlib import Path
 
 
 class FileStorage:
-    """Handles saving, reading and deleting uploaded CNAB files on disk."""
-
     UPLOAD_DIR: Path = Path(os.environ.get("UPLOAD_DIR", "/app/uploads"))
 
     def save(self, filename: str, content: bytes) -> str:
@@ -19,7 +17,6 @@ class FileStorage:
         return str(file_path)
 
     def read(self, file_path: str) -> bytes:
-        """Reads and returns the raw bytes from the given file path."""
         return Path(file_path).read_bytes()
 
     def delete(self, file_path: str) -> None:

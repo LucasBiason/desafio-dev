@@ -7,8 +7,6 @@ from pydantic import BaseModel, ConfigDict
 
 
 class UploadResponse(BaseModel):
-    """Serializes a single upload history record for API responses."""
-
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
