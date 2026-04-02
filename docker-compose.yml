@@ -1,0 +1,117 @@
+services:
+
+  # ============================================
+  # Infrastructure
+  # ============================================
+
+  db:
+    image: postgres:16-alpine
+    container_name: desafio-dev-db
+    ports:
+      - "${DB_EXTERNAL_PORT:-5435}:5432"
+    env_file:
+      - configs/.env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: desafio-dev-redis
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-6380}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Backend Services
+  # ============================================
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+      target: test
+    container_name: desafio-dev-user-service
+    command: ["runserver"]
+    ports:
+      - "${USER_SERVICE_PORT:-7001}:8001"
+    env_file:
+      - configs/.env
+    environment:
+      - PORT=8001
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    volumes:
+      - ./user-service/app:/app
+      - ./user-service/tests:/app/tests
+
+  cnab-service:
+    build:
+      context: .
+      dockerfile: cnab-service/Dockerfile
+      target: test
+    container_name: desafio-dev-cnab-service
+    command: ["runserver"]
+    ports:
+      - "${CNAB_SERVICE_PORT:-7002}:8002"
+    env_file:
+      - configs/.env
+    environment:
+      - PORT=8002
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - ./cnab-service/app:/app/app
+
+  # ============================================
+  # Frontend
+  # ============================================
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend-service/Dockerfile
+    container_name: desafio-dev-frontend
+    ports:
+      - "${FRONTEND_PORT:-7000}:3000"
+    depends_on:
+      user-service:
+        condition: service_healthy
+      cnab-service:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:

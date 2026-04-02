@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  /* Nord Polar Night */
+  --color-nord-0: #2e3440;
+  --color-nord-1: #3b4252;
+  --color-nord-2: #434c5e;
+  --color-nord-3: #4c566a;
+
+  /* Nord Snow Storm */
+  --color-nord-4: #d8dee9;
+  --color-nord-5: #e5e9f0;
+  --color-nord-6: #eceff4;
+
+  /* Nord Frost */
+  --color-nord-7: #8fbcbb;
+  --color-nord-8: #88c0d0;
+  --color-nord-9: #81a1c1;
+  --color-nord-10: #5e81ac;
+
+  /* Nord Aurora */
+  --color-nord-11: #bf616a;
+  --color-nord-12: #d08770;
+  --color-nord-13: #ebcb8b;
+  --color-nord-14: #a3be8c;
+  --color-nord-15: #b48ead;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #2e3440 0%, #1e2a3a 50%, #2e3440 100%);
+  background-attachment: fixed;
+  color: #eceff4;
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+.glass-card {
+  background: rgba(59, 66, 82, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(76, 86, 106, 0.3);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.btn-primary {
+  background-color: #5e81ac;
+  color: #eceff4;
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  transition: background-color 0.2s;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary:hover {
+  background-color: #81a1c1;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-nord-1);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-nord-3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-nord-9);
+}
