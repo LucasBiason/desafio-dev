@@ -4,6 +4,8 @@ import json
 import os
 from datetime import datetime, timezone
 
+from cryptography.fernet import Fernet
+
 
 class CnabServiceClient:
     """Sends parsed transaction data to cnab-service using a Fernet service token."""
@@ -14,8 +16,6 @@ class CnabServiceClient:
 
     def _generate_token(self) -> str:
         """Creates a Fernet-encrypted token identifying this service."""
-        from cryptography.fernet import Fernet
-
         fernet = Fernet(self.secret_key.encode())
         payload = json.dumps(
             {
