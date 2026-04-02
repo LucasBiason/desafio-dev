@@ -1,46 +1,24 @@
-"""Background task that processes a CNAB upload outside the request cycle."""
+"""Task that finds and processes pending CNAB uploads."""
 
-from uuid import UUID
+import logging
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
 
+from app.controllers.upload_controller import UploadController
 from app.repositories.upload_history_repository import UploadHistoryRepository
-from app.services.cnab_parser import CnabParser
-from app.services.cnab_service_client import CnabServiceClient
-from app.services.file_storage import FileStorage
+
+logger = logging.getLogger(__name__)
 
 
-def process_upload_task(upload_id: str, db_url: str) -> None:
-    """Background task: parse CNAB file and send to cnab-service.
+def process_pending_uploads(db: Session) -> None:
+    """Finds all pending uploads and processes each one via the controller."""
+    pending = UploadHistoryRepository(db).get_pending()
 
-    Creates its own database session because background tasks run
-    outside the request context and cannot reuse the request session.
-    """
-    engine = create_engine(db_url)
-    SessionLocal = sessionmaker(bind=engine)
-    db = SessionLocal()
+    if not pending:
+        return
 
-    try:
-        repo = UploadHistoryRepository(db)
-        upload = repo.get_by_id(UUID(upload_id))
-        if not upload:
-            return
+    logger.info("Found %d pending upload(s)", len(pending))
+    controller = UploadController(db=db, user_data={})
 
-        repo.update_status(upload, "processing")
-
-        try:
-            storage = FileStorage()
-            content = storage.read(upload.file_path)
-
-            parser = CnabParser()
-            transactions = parser.parse(content)
-
-            client = CnabServiceClient()
-            client.create_transactions(str(upload.id), transactions)
-
-            repo.update_status(upload, "completed", total_transactions=len(transactions))
-        except Exception as exc:
-            repo.update_status(upload, "failed", error_message=str(exc))
-    finally:
-        db.close()
+    for upload in pending:
+        controller.process_upload(str(upload.id))
