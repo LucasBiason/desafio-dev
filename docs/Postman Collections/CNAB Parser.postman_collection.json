@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "cnab-parser-collection",
     "name": "CNAB Parser",
-    "description": "## CNAB Parser\n\nAPI collection for the CNAB Parser system.\n\n### Services\n- **User Service** (port 7001): Authentication and user management\n- **CNAB Service** (port 7002): CNAB file upload and transaction management\n\n### Authentication\nAll protected endpoints require a Bearer token in the Authorization header.\nUse the **Login** request first to automatically set the token in environment variables.\n\n### Environment Variables\n- `user_service_url`: Base URL for user-service (default: http://localhost:7001)\n- `cnab_service_url`: Base URL for cnab-service (default: http://localhost:7002)\n- `encoded_token`: JWT token (auto-set by Login request)\n- `logged_user_id`: Current user ID (auto-set by Login request)\n- `target_user_id`: Last created/retrieved user ID (auto-set by Create/Retrieve User)",
+    "description": "## CNAB Parser\n\nAPI collection for the CNAB Parser system.\n\n### Services\n- **User Service** (port 7001): Authentication and user management\n- **Upload Service** (port 7003): CNAB file upload and processing\n- **CNAB Service** (port 7002): Transaction storage and queries\n\n### Authentication\n- **JWT**: User endpoints require Bearer token. Use **Login** first to auto-set the token.\n- **Fernet**: Upload-service to cnab-service communication (internal).\n\n### Environment Variables\n- `user_service_url`: http://localhost:7001\n- `upload_service_url`: http://localhost:7003\n- `cnab_service_url`: http://localhost:7002\n- `encoded_token`: JWT token (auto-set by Login)\n- `upload_id`: Last upload ID (auto-set by Upload CNAB)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "cnab-parser"
   },
@@ -415,8 +415,213 @@
       ]
     },
     {
+      "name": "Upload Service",
+      "description": "CNAB file upload and processing endpoints (port 7003).\n\nAll endpoints require JWT authentication.",
+      "item": [
+        {
+          "name": "Health",
+          "item": [
+            {
+              "name": "GET Health Check",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{upload_service_url}}/health",
+                  "host": ["{{upload_service_url}}"],
+                  "path": ["health"]
+                },
+                "description": "Returns service health status."
+              },
+              "response": [
+                {
+                  "name": "Success (200)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "url": { "raw": "{{upload_service_url}}/health", "host": ["{{upload_service_url}}"], "path": ["health"] }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"status\": \"healthy\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Upload",
+          "description": "CNAB file upload and history management.",
+          "item": [
+            {
+              "name": "POST Upload CNAB File",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const jsonData = pm.response.json();",
+                      "    pm.environment.set('upload_id', jsonData.id);",
+                      "    console.log('Upload ID: ' + jsonData.id);",
+                      "}",
+                      "",
+                      "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                      "pm.test('Has status pending', () => {",
+                      "    pm.expect(pm.response.json().status).to.equal('pending');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{encoded_token}}" }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [],
+                      "description": "CNAB file (.txt or .cnab). Required."
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{upload_service_url}}/upload/",
+                  "host": ["{{upload_service_url}}"],
+                  "path": ["upload", ""]
+                },
+                "description": "## Upload CNAB File\n\nReceives a CNAB file, stores it, and starts background processing.\nThe upload ID is automatically saved to `upload_id` environment variable.\n\n### Request\n- `file`: CNAB file in .txt or .cnab format (multipart/form-data)\n\n### Processing Flow\n1. File is validated and stored\n2. Upload record created with status `pending`\n3. Background task starts: parse → send to cnab-service → update status\n4. Final status: `completed` (with transaction count) or `failed` (with error message)\n\n### Validation\n- File must have .txt or .cnab extension\n- File must not be empty"
+              },
+              "response": [
+                {
+                  "name": "Success (201)",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [{ "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "body": { "mode": "formdata", "formdata": [{"key": "file", "type": "file", "src": "CNAB.txt"}] },
+                    "url": { "raw": "{{upload_service_url}}/upload/", "host": ["{{upload_service_url}}"], "path": ["upload", ""] }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n  \"original_filename\": \"CNAB.txt\",\n  \"file_path\": \"/app/uploads/uuid_CNAB.txt\",\n  \"status\": \"pending\",\n  \"total_transactions\": 0,\n  \"error_message\": null,\n  \"created_at\": \"2026-04-02T10:00:00Z\",\n  \"updated_at\": \"2026-04-02T10:00:00Z\"\n}"
+                },
+                {
+                  "name": "Error - Invalid file (400)",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [{ "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "body": { "mode": "formdata", "formdata": [{"key": "file", "type": "file", "src": "invalid.pdf"}] },
+                    "url": { "raw": "{{upload_service_url}}/upload/", "host": ["{{upload_service_url}}"], "path": ["upload", ""] }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"detail\": \"Invalid file extension. Allowed: .txt, .cnab\"\n}"
+                },
+                {
+                  "name": "Error - No auth (401)",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "body": { "mode": "formdata", "formdata": [{"key": "file", "type": "file", "src": "CNAB.txt"}] },
+                    "url": { "raw": "{{upload_service_url}}/upload/", "host": ["{{upload_service_url}}"], "path": ["upload", ""] }
+                  },
+                  "status": "Unauthorized",
+                  "code": 401,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"error\": \"Missing or invalid authorization header.\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "GET List Uploads",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{encoded_token}}" }
+                ],
+                "url": {
+                  "raw": "{{upload_service_url}}/uploads/?page=1&page_size=20",
+                  "host": ["{{upload_service_url}}"],
+                  "path": ["uploads", ""],
+                  "query": [
+                    { "key": "page", "value": "1", "description": "Page number (default: 1)" },
+                    { "key": "page_size", "value": "20", "description": "Items per page (default: 20, max: 100)" },
+                    { "key": "status", "value": "", "description": "Filter by status: pending, processing, completed, failed", "disabled": true }
+                  ]
+                },
+                "description": "## List Uploads\n\nReturns paginated list of uploads for the authenticated user.\n\n### Query Parameters\n| Parameter | Type | Description |\n|-----------|------|-------------|\n| page | int | Page number (default: 1) |\n| page_size | int | Items per page (default: 20, max: 100) |\n| status | string | Filter: pending, processing, completed, failed |"
+              },
+              "response": [
+                {
+                  "name": "Success (200)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [{ "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "url": { "raw": "{{upload_service_url}}/uploads/", "host": ["{{upload_service_url}}"], "path": ["uploads", ""] }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"count\": 1,\n  \"results\": [\n    {\n      \"id\": \"a1b2c3d4-...\",\n      \"original_filename\": \"CNAB.txt\",\n      \"status\": \"completed\",\n      \"total_transactions\": 21,\n      \"error_message\": null,\n      \"created_at\": \"2026-04-02T10:00:00Z\",\n      \"updated_at\": \"2026-04-02T10:00:05Z\"\n    }\n  ]\n}"
+                }
+              ]
+            },
+            {
+              "name": "GET Upload Detail",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{encoded_token}}" }
+                ],
+                "url": {
+                  "raw": "{{upload_service_url}}/uploads/{{upload_id}}",
+                  "host": ["{{upload_service_url}}"],
+                  "path": ["uploads", "{{upload_id}}"]
+                },
+                "description": "## Upload Detail\n\nReturns detailed information about a specific upload.\n\n### Path Parameters\n| Parameter | Type | Description |\n|-----------|------|-------------|\n| upload_id | UUID | Upload ID |"
+              },
+              "response": [
+                {
+                  "name": "Success (200)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [{ "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "url": { "raw": "{{upload_service_url}}/uploads/{{upload_id}}", "host": ["{{upload_service_url}}"], "path": ["uploads", "{{upload_id}}"] }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"id\": \"a1b2c3d4-...\",\n  \"original_filename\": \"CNAB.txt\",\n  \"file_path\": \"/app/uploads/uuid_CNAB.txt\",\n  \"status\": \"completed\",\n  \"total_transactions\": 21,\n  \"error_message\": null,\n  \"created_at\": \"2026-04-02T10:00:00Z\",\n  \"updated_at\": \"2026-04-02T10:00:05Z\"\n}"
+                },
+                {
+                  "name": "Error - Not found (404)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [{ "key": "Authorization", "value": "Bearer {{encoded_token}}" }],
+                    "url": { "raw": "{{upload_service_url}}/uploads/00000000-0000-0000-0000-000000000000", "host": ["{{upload_service_url}}"], "path": ["uploads", "00000000-0000-0000-0000-000000000000"] }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "body": "{\n  \"detail\": \"Upload not found.\"\n}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "CNAB Service",
-      "description": "CNAB file upload and transaction management endpoints (port 7002).\n\n**Note:** Endpoints will be added as the CNAB service is implemented.",
+      "description": "Transaction storage and query endpoints (port 7002).\n\nEndpoints will be added as the CNAB service is implemented.",
       "item": [
         {
           "name": "Health",
