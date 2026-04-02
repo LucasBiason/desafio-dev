@@ -3,7 +3,7 @@
 from django.contrib import admin
 from django.urls import include, path
 
-from core.views.health import health_view
+from core.views.health import health_view, liveness_view, readiness_view
 from core.views.swagger import schema_view
 
 urlpatterns = [
@@ -18,6 +18,10 @@ urlpatterns = [
     path("", health_view, name="health-root"),
     path("health", health_view, name="health"),
     path("health/", health_view, name="health-slash"),
+    path("health/ready", readiness_view, name="health-ready"),
+    path("health/ready/", readiness_view, name="health-ready-slash"),
+    path("health/live", liveness_view, name="health-live"),
+    path("health/live/", liveness_view, name="health-live-slash"),
 
     # Authentication
     path("auth/v1/", include("authentication.urls")),
