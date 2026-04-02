@@ -1,5 +1,4 @@
-import { useState, useRef, memo } from 'react';
-import type { FC, DragEvent } from 'react';
+import React, { useState, useRef, memo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faCloudArrowUp,
@@ -20,7 +19,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const DropZone: FC<DropZoneProps> = memo(({ onUploadSuccess }) => {
+const DropZone: React.FC<DropZoneProps> = memo(({ onUploadSuccess }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -39,17 +38,17 @@ const DropZone: FC<DropZoneProps> = memo(({ onUploadSuccess }) => {
     handleFileChange(e.target.files?.[0] ?? null);
   };
 
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragOver(true);
   };
 
-  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragOver(false);
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragOver(false);
     handleFileChange(e.dataTransfer.files?.[0] ?? null);

@@ -7,7 +7,7 @@ import {
   faCircleCheck,
   faCircleXmark,
 } from '@fortawesome/free-solid-svg-icons';
-import type { UploadStatus } from '../../types/upload';
+import type { UploadStatus } from '../types/upload';
 
 const BADGE_CLASS: Record<UploadStatus, string> = {
   pending: 'badge badge-pending',

@@ -3,9 +3,10 @@ import type { FC } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRotate } from '@fortawesome/free-solid-svg-icons';
 import Layout from '../components/Layout';
-import DropZone from '../components/upload/DropZone';
-import FilterPanel from '../components/upload/FilterPanel';
-import UploadDataTable from '../components/upload/UploadDataTable';
+import PageTitle from '../components/PageTitle';
+import DropZone from './upload/DropZone';
+import FilterPanel from './upload/FilterPanel';
+import UploadDataTable from './upload/UploadDataTable';
 import { uploadService } from '../services/uploadService';
 import type { UploadResponse, UploadStatus } from '../types/upload';
 
@@ -90,17 +91,15 @@ const Upload: FC = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h2 className="text-[#FFFFFF] text-xl font-semibold">Upload de Arquivo CNAB</h2>
-          <p className="text-[#D8D8D8] text-sm mt-1">
-            Importe arquivos CNAB para processar transações.
-          </p>
-        </div>
+        <PageTitle
+          title="Upload de Arquivo CNAB"
+          subtitle="Importe arquivos CNAB para processar transações."
+        />
 
         <DropZone onUploadSuccess={handleUploadSuccess} />
 
         <div className="flex items-center justify-between">
-          <h3 className="text-[#FFFFFF] text-base font-semibold">Histórico de Uploads</h3>
+          <h3 className="section-title">Histórico de Uploads</h3>
           <button
             type="button"
             onClick={() => loadUploads(selectedStatuses, filenameFilter, dateFrom, dateTo)}

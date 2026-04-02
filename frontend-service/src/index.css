@@ -232,6 +232,25 @@ body {
 .dot-completed { background-color: #02BE3B; }
 .dot-failed { background-color: #FF4444; }
 
+/* Page title classes */
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: #D8D8D8;
+  margin-top: 0.25rem;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
 /* Submit button (login) */
 .btn-submit {
   background-color: #02BE3B;
