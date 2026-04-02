@@ -76,3 +76,175 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-bc-btn);
 }
+
+/* Glass circle (icon container) */
+.glass-circle {
+  background: rgba(30, 30, 30, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(58, 58, 58, 0.3);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #4FFA7B, #02BE3B);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Full-page background gradient */
+.bg-page {
+  background: linear-gradient(135deg, #171616 0%, #0d0d0d 50%, #171616 100%);
+}
+
+/* Form input base */
+.form-input {
+  background: rgba(42, 42, 42, 0.5);
+  border: 1px solid #3a3a3a;
+  color: #FFFFFF;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #4FFA7B;
+  box-shadow: 0 0 0 1px #4FFA7B;
+}
+
+/* Filter/table input */
+.filter-input {
+  background: #171616;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+}
+
+.filter-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px #4FFA7B;
+  border-color: #4FFA7B;
+}
+
+/* Status badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badge-pending {
+  background: rgba(255, 184, 0, 0.15);
+  color: #FFB800;
+}
+
+.badge-processing {
+  background: rgba(79, 250, 123, 0.15);
+  color: #4FFA7B;
+}
+
+.badge-completed {
+  background: rgba(2, 190, 59, 0.15);
+  color: #02BE3B;
+}
+
+.badge-failed {
+  background: rgba(255, 68, 68, 0.15);
+  color: #FF4444;
+}
+
+/* Alert styles */
+.alert-warning {
+  background: rgba(255, 184, 0, 0.1);
+  border: 1px solid rgba(255, 184, 0, 0.4);
+  color: #FFB800;
+}
+
+.alert-error {
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.4);
+  color: #FF4444;
+}
+
+.alert-success {
+  background: rgba(2, 190, 59, 0.1);
+  border: 1px solid rgba(2, 190, 59, 0.3);
+  color: #02BE3B;
+}
+
+/* Filter chip */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: border-color 0.15s, color 0.15s;
+  background: transparent;
+  color: #D8D8D8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #FFFFFF;
+}
+
+.chip-active {
+  color: #FFFFFF;
+}
+
+/* Status-specific chip active states */
+.chip-pending {
+  background: rgba(255, 184, 0, 0.19);
+  color: #FFB800;
+  border-color: rgba(255, 184, 0, 0.31);
+}
+
+.chip-processing {
+  background: rgba(79, 250, 123, 0.19);
+  color: #4FFA7B;
+  border-color: rgba(79, 250, 123, 0.31);
+}
+
+.chip-completed {
+  background: rgba(2, 190, 59, 0.19);
+  color: #02BE3B;
+  border-color: rgba(2, 190, 59, 0.31);
+}
+
+.chip-failed {
+  background: rgba(255, 68, 68, 0.19);
+  color: #FF4444;
+  border-color: rgba(255, 68, 68, 0.31);
+}
+
+/* Status dot colors */
+.dot-pending { background-color: #FFB800; }
+.dot-processing { background-color: #4FFA7B; }
+.dot-completed { background-color: #02BE3B; }
+.dot-failed { background-color: #FF4444; }
+
+/* Submit button (login) */
+.btn-submit {
+  background-color: #02BE3B;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background-color: #029E32;
+}
+
+.btn-submit:disabled {
+  background-color: rgba(2, 190, 59, 0.5);
+  cursor: not-allowed;
+}
