@@ -1,6 +1,7 @@
 """Business logic for CNAB upload operations."""
 
 import logging
+from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -67,7 +68,6 @@ class UploadController:
 
     def get_upload(self, upload_id: str) -> UploadHistory | None:
         """Returns a single upload by UUID."""
-        from uuid import UUID
         return self.repository.get_by_id(UUID(upload_id))
 
     def process_upload(self, upload_id: str) -> None:
