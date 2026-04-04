@@ -30,6 +30,8 @@ interface DataTableProps<T> {
   defaultSortKey?: string;
   defaultSortDir?: 'asc' | 'desc';
   rowKey?: (row: T) => string;
+  onRowClick?: (row: T) => void;
+  selectedRowKey?: string;
 }
 
 type SortDir = 'asc' | 'desc';
@@ -93,6 +95,8 @@ function DataTable<T extends Record<string, unknown>>({
   defaultSortKey,
   defaultSortDir = 'asc',
   rowKey,
+  onRowClick,
+  selectedRowKey,
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string>(defaultSortKey ?? '');
   const [sortDir, setSortDir] = useState<SortDir>(defaultSortDir);
@@ -238,10 +242,33 @@ function DataTable<T extends Record<string, unknown>>({
             ) : (
               pageRows.map((row, rowIndex) => {
                 const key = rowKey ? rowKey(row) : String(rowIndex);
+                const isSelected = selectedRowKey !== undefined && key === selectedRowKey;
+                const isClickable = !!onRowClick;
                 return (
                   <tr
                     key={key}
-                    className="border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors"
+                    className={[
+                      'border-b border-white/5 last:border-0 transition-colors',
+                      isSelected
+                        ? 'bg-accent/10 border-l-2 border-l-accent'
+                        : isClickable
+                        ? 'hover:bg-white/[0.04] cursor-pointer'
+                        : 'hover:bg-white/[0.02]',
+                    ].join(' ')}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    role={isClickable ? 'button' : undefined}
+                    tabIndex={isClickable ? 0 : undefined}
+                    onKeyDown={
+                      isClickable
+                        ? (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onRowClick(row);
+                            }
+                          }
+                        : undefined
+                    }
+                    aria-selected={isSelected ? true : undefined}
                   >
                     {columns.map((col) => {
                       const value = row[col.key];
