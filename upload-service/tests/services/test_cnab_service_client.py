@@ -1,6 +1,8 @@
 """Tests for CnabServiceClient."""
 
 import os
+from unittest.mock import patch, MagicMock
+
 import pytest
 from cryptography.fernet import Fernet
 
@@ -14,22 +16,44 @@ def fernet_key():
 
 
 class TestCnabServiceClient:
-    """Tests for CnabServiceClient token generation and transaction stub."""
 
     def test_generate_token_returns_string(self, fernet_key):
-        """_generate_token returns a non-empty string token."""
+        """Token is a non-empty encrypted string."""
         os.environ["SERVICE_SECRET_KEY"] = fernet_key
         client = CnabServiceClient()
         token = client._generate_token()
         assert isinstance(token, str)
         assert len(token) > 0
 
-    def test_create_transactions_stub_returns_dict(self):
-        """create_transactions returns a dict with expected keys."""
+    @patch("app.services.cnab_service_client.httpx.post")
+    def test_create_transactions_success(self, mock_post, fernet_key):
+        """Returns cnab-service response on 201."""
+        os.environ["SERVICE_SECRET_KEY"] = fernet_key
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {
+            "upload_id": "test-uuid",
+            "total_inserted": 2,
+            "stores_created": 1,
+        }
+        mock_post.return_value = mock_response
+
         client = CnabServiceClient()
-        transactions = [{"type_code": 1, "amount": "10.00"}]
-        result = client.create_transactions("upload-uuid-123", transactions)
-        assert isinstance(result, dict)
-        assert result["upload_id"] == "upload-uuid-123"
-        assert result["total_inserted"] == 1
-        assert "stores_created" in result
+        result = client.create_transactions("test-uuid", [{"type_code": 1}, {"type_code": 2}])
+
+        assert result["upload_id"] == "test-uuid"
+        assert result["total_inserted"] == 2
+        mock_post.assert_called_once()
+
+    @patch("app.services.cnab_service_client.httpx.post")
+    def test_create_transactions_failure_raises(self, mock_post, fernet_key):
+        """Raises RuntimeError on non-201 response."""
+        os.environ["SERVICE_SECRET_KEY"] = fernet_key
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+        mock_post.return_value = mock_response
+
+        client = CnabServiceClient()
+        with pytest.raises(RuntimeError, match="cnab-service error: 500"):
+            client.create_transactions("test-uuid", [])
