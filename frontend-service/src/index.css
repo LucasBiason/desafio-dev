@@ -371,3 +371,59 @@ body {
   color: #FFFFFF;
   background-color: rgba(255, 255, 255, 0.05);
 }
+
+/* === Chart CSS variables === */
+:root {
+  --chart-axis: #898989;
+  --chart-grid: #2a2a2a;
+  --chart-cursor: rgba(255, 255, 255, 0.04);
+  --chart-cursor-line: rgba(255, 255, 255, 0.15);
+  --chart-bar-positive: #02BE3B;
+  --chart-bar-negative: #FF4444;
+  --chart-line: #4FFA7B;
+}
+
+/* Chart tooltip */
+.chart-tooltip {
+  background-color: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Stat card icon variants */
+.stat-card-icon-default {
+  background-color: #2a2a2a;
+  color: #D8D8D8;
+}
+.stat-card-icon-success {
+  background-color: rgba(2, 190, 59, 0.15);
+  color: #02BE3B;
+}
+.stat-card-icon-error {
+  background-color: rgba(255, 68, 68, 0.15);
+  color: #FF4444;
+}
+.stat-card-icon-warning {
+  background-color: rgba(255, 184, 0, 0.15);
+  color: #FFB800;
+}
+
+/* Dashboard skeleton */
+.skeleton-stat {
+  background-color: #2a2a2a;
+  border-radius: 0.75rem;
+  height: 96px;
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-chart {
+  background-color: #2a2a2a;
+  border-radius: 0.75rem;
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
