@@ -15,9 +15,7 @@ class TransactionType(BaseModel):
     nature = Column(String(10), nullable=False)
     sign = Column(String(1), nullable=False)
 
-    __table_args__ = (
-        UniqueConstraint("code", name="uq_transaction_type_code"),
-    )
+    __table_args__ = (UniqueConstraint("code", name="uq_transaction_type_code"),)
 
     def __repr__(self) -> str:
         return f"<TransactionType {self.code}: {self.description}>"

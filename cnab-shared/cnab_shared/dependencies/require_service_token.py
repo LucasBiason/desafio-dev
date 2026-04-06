@@ -2,7 +2,7 @@
 
 from fastapi import Header
 
-from app.services.fernet_validator import FernetValidator
+from cnab_shared.services.fernet_validator import FernetValidator
 
 
 def require_service_token(x_service_token: str = Header(...)) -> dict:

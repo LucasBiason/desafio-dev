@@ -4,17 +4,19 @@ Revision ID: b00000000001
 Revises: 96d9e7a430b0
 Create Date: 2026-04-02
 """
-from typing import Sequence, Union
 
 import uuid
-from alembic import op
-from sqlalchemy import Boolean, table, column, String, SmallInteger
+from collections.abc import Sequence
+
+from sqlalchemy import Boolean, SmallInteger, String, column, table
 from sqlalchemy.dialects.postgresql import UUID
 
+from alembic import op
+
 revision: str = "b00000000001"
-down_revision: Union[str, None] = "96d9e7a430b0"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "96d9e7a430b0"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 TRANSACTION_TYPES = [
     (1, "Débito", "entrada", "+"),
@@ -39,10 +41,20 @@ def upgrade() -> None:
         column("sign", String),
         column("is_active", Boolean),
     )
-    op.bulk_insert(tt, [
-        {"id": str(uuid.uuid4()), "code": code, "description": desc, "nature": nature, "sign": sign, "is_active": True}
-        for code, desc, nature, sign in TRANSACTION_TYPES
-    ])
+    op.bulk_insert(
+        tt,
+        [
+            {
+                "id": str(uuid.uuid4()),
+                "code": code,
+                "description": desc,
+                "nature": nature,
+                "sign": sign,
+                "is_active": True,
+            }
+            for code, desc, nature, sign in TRANSACTION_TYPES
+        ],
+    )
 
 
 def downgrade() -> None:

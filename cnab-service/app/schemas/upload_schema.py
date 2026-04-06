@@ -1,4 +1,4 @@
-"""Pydantic schemas for internal (service-to-service) transaction ingestion."""
+"""Pydantic schemas for upload (service-to-service) transaction ingestion."""
 
 from pydantic import BaseModel
 

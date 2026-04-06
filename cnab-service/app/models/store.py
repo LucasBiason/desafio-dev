@@ -17,9 +17,7 @@ class Store(BaseModel):
 
     transactions = relationship("Transaction", back_populates="store")
 
-    __table_args__ = (
-        UniqueConstraint("name", "owner_cpf", name="uq_store_name_cpf"),
-    )
+    __table_args__ = (UniqueConstraint("name", "owner_cpf", name="uq_store_name_cpf"),)
 
     def __repr__(self) -> str:
         return f"<Store {self.name} ({self.owner_name})>"

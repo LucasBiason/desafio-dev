@@ -1,5 +1,6 @@
-"""Controller for internal transaction ingestion from upload-service."""
+"""Controller for upload transaction ingestion from upload-service."""
 
+import hashlib
 import logging
 from datetime import date, time
 from decimal import Decimal
@@ -13,7 +14,7 @@ from app.repositories.transaction_repository import TransactionRepository
 logger = logging.getLogger(__name__)
 
 
-class InternalController:
+class UploadController:
     """Processes bulk transaction payloads sent by the upload-service."""
 
     def __init__(self, db: Session) -> None:
@@ -49,14 +50,36 @@ class InternalController:
                 logger.warning("Unknown transaction type code: %s — skipping.", item["type_code"])
                 continue
 
+            amount = Decimal(item["amount"])
+            occurred_at = date.fromisoformat(item["date"])
+            occurred_time = time.fromisoformat(item["time"])
+            card = item["card"]
+
+            hash_input = f"{transaction_type.id}|{store.id}|{amount}|{card}|{occurred_at}|{occurred_time}"
+            content_hash = hashlib.sha256(hash_input.encode()).hexdigest()
+
+            if self._transaction_repo.exists_by_hash(content_hash):
+                continue
+
+            if self._transaction_repo.exists_by_fields(
+                transaction_type_id=str(transaction_type.id),
+                store_id=str(store.id),
+                amount=str(amount),
+                card=card,
+                occurred_at=str(occurred_at),
+                occurred_time=str(occurred_time),
+            ):
+                continue
+
             transaction = Transaction()
             transaction.transaction_type_id = transaction_type.id
             transaction.store_id = store.id
             transaction.upload_id = upload_id
-            transaction.amount = Decimal(item["amount"])
-            transaction.card = item["card"]
-            transaction.occurred_at = date.fromisoformat(item["date"])
-            transaction.occurred_time = time.fromisoformat(item["time"])
+            transaction.amount = amount
+            transaction.card = card
+            transaction.occurred_at = occurred_at
+            transaction.occurred_time = occurred_time
+            transaction.content_hash = content_hash
 
             records.append(transaction)
 

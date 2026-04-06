@@ -2,9 +2,9 @@
 
 from decimal import Decimal
 
-from app.schemas.internal_schema import BulkTransactionRequest, BulkTransactionResponse, TransactionInput
 from app.schemas.store_schema import StoreListResponse, StoreResponse
 from app.schemas.transaction_schema import TransactionListResponse, TransactionResponse, TransactionTypeResponse
+from app.schemas.upload_schema import BulkTransactionRequest, BulkTransactionResponse, TransactionInput
 
 
 class TestStoreResponse:
