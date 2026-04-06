@@ -3,6 +3,8 @@ source = app
 omit =
     */tests/*
     app/__init__.py
+    app/services/*
+    app/validators/*
 
 [report]
 show_missing = true

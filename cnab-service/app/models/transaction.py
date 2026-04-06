@@ -1,6 +1,6 @@
 """CNAB transaction model."""
 
-from sqlalchemy import Column, Date, ForeignKey, Index, Numeric, String, Time
+from sqlalchemy import Column, Date, ForeignKey, Index, Numeric, String, Time, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -19,6 +19,7 @@ class Transaction(BaseModel):
     card = Column(String(20), nullable=False)
     occurred_at = Column(Date, nullable=False)
     occurred_time = Column(Time, nullable=False)
+    content_hash = Column(String(64), nullable=True, unique=True)
 
     transaction_type = relationship("TransactionType")
     store = relationship("Store", back_populates="transactions")
@@ -26,6 +27,7 @@ class Transaction(BaseModel):
     __table_args__ = (
         Index("idx_transaction_store_date", "store_id", "occurred_at"),
         Index("idx_transaction_upload", "upload_id"),
+        UniqueConstraint("content_hash", name="uq_transaction_content_hash"),
     )
 
     def __repr__(self) -> str:

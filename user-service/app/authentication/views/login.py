@@ -1,7 +1,6 @@
 """API endpoint for user login."""
 
 import logging
-from typing import Dict
 
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -24,5 +23,5 @@ class Login(APIView):
 
     @schemas.login
     def post(self, request) -> Response:
-        logged_user: Dict = JWTAuthentication.login(request)
+        logged_user: dict = JWTAuthentication.login(request)
         return Response(logged_user, status=status.HTTP_200_OK)

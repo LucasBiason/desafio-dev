@@ -3,7 +3,7 @@
 import os
 
 os.environ["TESTING"] = "true"
-os.environ["DATABASE_URL"] = "sqlite:///./test_upload.db"
+os.environ["DATABASE_URL"] = "sqlite://"
 
 import pytest
 from fastapi.testclient import TestClient
@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 
 from cnab_shared.database.database import Base
 
-engine = create_engine("sqlite:///./test_upload.db", connect_args={"check_same_thread": False})
+engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
 TestSession = sessionmaker(bind=engine)
 
 

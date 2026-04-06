@@ -4,12 +4,7 @@ import DataTable from '../../components/DataTable';
 import type { Column } from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
 import type { UploadResponse } from '../../types/upload';
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+import { formatDateTime } from '../../utils/formatters';
 
 type UploadRow = UploadResponse & Record<string, unknown>;
 
@@ -51,7 +46,7 @@ const columns: Column<UploadRow>[] = [
     key: 'created_at',
     label: 'Data de Upload',
     sortable: true,
-    render: (val) => formatDate(String(val)),
+    render: (val) => formatDateTime(String(val)),
     className: 'tabular-nums whitespace-nowrap',
   },
 ];

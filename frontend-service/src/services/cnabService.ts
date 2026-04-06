@@ -28,18 +28,18 @@ export const cnabService = {
   async getStoreTransactions(
     storeId: string,
     filters?: {
-      type?: string;
+      type_codes?: string;
       nature?: string;
       date_from?: string;
       date_to?: string;
     },
   ): Promise<TransactionListResponse> {
-    const params: Record<string, string> = {};
-    if (filters?.type) params.type = filters.type;
+    const params: Record<string, string> = { store_id: storeId };
+    if (filters?.type_codes) params.type_codes = filters.type_codes;
     if (filters?.nature) params.nature = filters.nature;
     if (filters?.date_from) params.date_from = filters.date_from;
     if (filters?.date_to) params.date_to = filters.date_to;
-    const response = await api.get(`/api/cnab/stores/${storeId}/transactions/`, { params });
+    const response = await api.get('/api/cnab/transactions/', { params });
     return response.data;
   },
 

@@ -39,7 +39,7 @@ def get_engine() -> Engine:
 
     if is_testing:
         _engine = create_engine(
-            "sqlite:///./test.db",
+            "sqlite://",
             connect_args={"check_same_thread": False},
         )
     else:

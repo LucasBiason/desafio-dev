@@ -71,6 +71,26 @@ class StoreRepository(BaseRepository[Store]):
         rows = self.query_list(data_sql, params)
         return rows, total
 
+    def get_with_balance(self, store_id: str) -> dict | None:
+        """Returns a single store by UUID with aggregated balance fields, or None."""
+        sql = """
+            SELECT
+                CAST(s.id AS TEXT) AS id,
+                s.name,
+                s.owner_name,
+                s.owner_cpf,
+                COALESCE(SUM(CASE WHEN tt.sign = '+' THEN t.amount ELSE -t.amount END), 0) AS balance,
+                COALESCE(SUM(CASE WHEN tt.sign = '+' THEN t.amount ELSE 0 END), 0) AS total_income,
+                COALESCE(SUM(CASE WHEN tt.sign = '-' THEN t.amount ELSE 0 END), 0) AS total_expense,
+                COUNT(t.id) AS transaction_count
+            FROM cnab_store s
+            LEFT JOIN cnab_transaction t ON t.store_id = s.id
+            LEFT JOIN cnab_transaction_type tt ON tt.id = t.transaction_type_id
+            WHERE s.id = CAST(:store_id AS UUID)
+            GROUP BY s.id, s.name, s.owner_name, s.owner_cpf
+        """
+        return self.query_one(sql, {"store_id": store_id})
+
     def get_or_create(
         self,
         name: str,
@@ -81,11 +101,7 @@ class StoreRepository(BaseRepository[Store]):
 
         Returns (store, created) where created is True when a new record was inserted.
         """
-        existing = (
-            self.db.query(Store)
-            .filter(Store.name == name, Store.owner_cpf == owner_cpf)
-            .first()
-        )
+        existing = self.db.query(Store).filter(Store.name == name, Store.owner_cpf == owner_cpf).first()
         if existing:
             return existing, False
 

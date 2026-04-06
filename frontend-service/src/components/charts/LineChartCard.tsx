@@ -75,7 +75,7 @@ const LineChartCard: FC<LineChartCardProps> = memo(({ title, labels, data }) => 
             tickLine={false}
             allowDecimals={false}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--chart-cursor-line)' }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--chart-cursor-line)' }} isAnimationActive={false} />
           <Line
             type="monotone"
             dataKey="value"

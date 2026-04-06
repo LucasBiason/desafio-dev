@@ -1,6 +1,5 @@
 """JWT authentication middleware that validates tokens via user-service."""
 
-import json
 import logging
 
 from starlette.middleware.base import BaseHTTPMiddleware

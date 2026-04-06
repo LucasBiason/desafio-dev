@@ -3,10 +3,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.dependencies import require_jwt
 from app.repositories.transaction_repository import TransactionRepository
 from app.schemas.transaction_schema import TransactionTypeResponse
-from cnab_shared import get_db
+from cnab_shared import get_db, require_jwt
 
 transaction_type_router = APIRouter(tags=["Transaction Types"])
 
@@ -19,4 +18,13 @@ def list_transaction_types(
     """Returns all 9 CNAB transaction type definitions."""
     repo = TransactionRepository(db=db)
     types = repo.get_all_types()
-    return [TransactionTypeResponse.model_validate(t) for t in types]
+    return [
+        TransactionTypeResponse(
+            id=str(t.id),
+            code=t.code,
+            description=t.description,
+            nature=t.nature,
+            sign=t.sign,
+        )
+        for t in types
+    ]

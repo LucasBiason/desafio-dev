@@ -26,7 +26,7 @@ class TransactionRepository(BaseRepository[Transaction]):
         store_id: str,
         page: int = 1,
         page_size: int = 20,
-        type_code: int | None = None,
+        type_codes: list[int] | None = None,
         nature: str | None = None,
         date_from: str | None = None,
         date_to: str | None = None,
@@ -38,13 +38,19 @@ class TransactionRepository(BaseRepository[Transaction]):
         where_clauses = ["t.store_id = CAST(:store_id AS UUID)"]
         params: dict = {"store_id": store_id}
 
-        if type_code is not None:
-            where_clauses.append("tt.code = :type_code")
-            params["type_code"] = type_code
+        if type_codes is not None and len(type_codes) > 0:
+            placeholders = ", ".join(f":tc_{i}" for i in range(len(type_codes)))
+            where_clauses.append(f"tt.code IN ({placeholders})")
+            for i, code in enumerate(type_codes):
+                params[f"tc_{i}"] = code
 
         if nature:
-            where_clauses.append("tt.nature = :nature")
-            params["nature"] = nature
+            normalized = nature.lower().replace("á", "a").replace("í", "i")
+            if normalized in ("entrada", "saida"):
+                where_clauses.append(f"tt.sign = '{'+' if normalized == 'entrada' else '-'}'")
+            else:
+                where_clauses.append("LOWER(tt.nature) = LOWER(:nature)")
+                params["nature"] = nature
 
         if date_from:
             where_clauses.append("t.occurred_at >= :date_from")
@@ -94,6 +100,59 @@ class TransactionRepository(BaseRepository[Transaction]):
         """
         rows = self.query_list(data_sql, params)
         return rows, total
+
+    def get_detail(self, transaction_id: str) -> dict | None:
+        """Returns a single transaction with type and store data, or None."""
+        sql = """
+            SELECT
+                CAST(t.id AS TEXT) AS id,
+                t.amount,
+                t.card,
+                CAST(t.occurred_at AS TEXT) AS occurred_at,
+                CAST(t.occurred_time AS TEXT) AS occurred_time,
+                CAST(tt.id AS TEXT) AS transaction_type_id,
+                tt.code AS transaction_type_code,
+                tt.description AS transaction_type_description,
+                tt.nature AS transaction_type_nature,
+                tt.sign AS transaction_type_sign,
+                CAST(s.id AS TEXT) AS store_id,
+                s.name AS store_name,
+                s.owner_name AS store_owner_name,
+                s.owner_cpf AS store_owner_cpf
+            FROM cnab_transaction t
+            JOIN cnab_transaction_type tt ON tt.id = t.transaction_type_id
+            JOIN cnab_store s ON s.id = t.store_id
+            WHERE t.id = CAST(:transaction_id AS UUID)
+        """
+        return self.query_one(sql, {"transaction_id": transaction_id})
+
+    def exists_by_hash(self, content_hash: str) -> bool:
+        """Checks if a transaction with the given content hash already exists."""
+        return self.db.query(Transaction.id).filter(Transaction.content_hash == content_hash).first() is not None
+
+    def exists_by_fields(
+        self,
+        transaction_type_id: str,
+        store_id: str,
+        amount: str,
+        card: str,
+        occurred_at: str,
+        occurred_time: str,
+    ) -> bool:
+        """Checks if a transaction with the exact same business fields already exists."""
+        return (
+            self.db.query(Transaction.id)
+            .filter(
+                Transaction.transaction_type_id == transaction_type_id,
+                Transaction.store_id == store_id,
+                Transaction.amount == amount,
+                Transaction.card == card,
+                Transaction.occurred_at == occurred_at,
+                Transaction.occurred_time == occurred_time,
+            )
+            .first()
+            is not None
+        )
 
     def bulk_create(self, transactions: list[Transaction]) -> int:
         """Inserts a list of Transaction instances in bulk and returns the count inserted."""

@@ -24,6 +24,16 @@ interface CustomTooltipProps {
   payload?: TooltipPayload[];
 }
 
+interface LabelProps {
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  percent?: number;
+  index?: number;
+}
+
 const CustomTooltip: FC<CustomTooltipProps> = ({ active, payload }) => {
   if (!active || !payload || payload.length === 0) return null;
   const item = payload[0];
@@ -32,6 +42,40 @@ const CustomTooltip: FC<CustomTooltipProps> = ({ active, payload }) => {
       <p className="text-muted text-xs mb-1">{item.name}</p>
       <p className="text-primary text-sm font-semibold">{item.value} transações</p>
     </div>
+  );
+};
+
+const renderLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: LabelProps) => {
+  if (
+    cx == null ||
+    cy == null ||
+    midAngle == null ||
+    innerRadius == null ||
+    outerRadius == null ||
+    percent == null
+  ) {
+    return null;
+  }
+
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  if (percent < 0.05) return null;
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="white"
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize={11}
+      fontWeight={600}
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
   );
 };
 
@@ -47,17 +91,19 @@ const PieChartCard: FC<PieChartCardProps> = memo(({ title, labels, data, colors 
     <div className="surface-card p-5 flex flex-col gap-4">
       <h3 className="section-title">{title}</h3>
       <div className="flex items-center gap-4">
-        <div className="w-1/2 min-w-0">
-          <ResponsiveContainer width="100%" height={220}>
+        <div style={{ width: '60%' }} className="min-w-0 shrink-0">
+          <ResponsiveContainer width="100%" height={350}>
             <PieChart>
               <Pie
                 data={chartData}
                 cx="50%"
                 cy="50%"
-                innerRadius="55%"
-                outerRadius="80%"
+                innerRadius="45%"
+                outerRadius="75%"
                 paddingAngle={2}
                 dataKey="value"
+                labelLine={false}
+                label={renderLabel}
               >
                 {chartData.map((_, index) => (
                   <Cell
@@ -66,12 +112,16 @@ const PieChartCard: FC<PieChartCardProps> = memo(({ title, labels, data, colors 
                   />
                 ))}
               </Pie>
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip
+                content={<CustomTooltip />}
+                isAnimationActive={false}
+                wrapperStyle={{ pointerEvents: 'none' }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="w-1/2 min-w-0 flex flex-col gap-1.5">
+        <div style={{ width: '40%' }} className="min-w-0 flex flex-col gap-1.5 overflow-y-auto max-h-[350px]">
           {chartData.map((entry, index) => {
             const percentage = total > 0 ? ((entry.value / total) * 100).toFixed(1) : '0.0';
             const countStr = String(entry.value).padStart(2, ' ');
