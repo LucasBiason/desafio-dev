@@ -14,38 +14,42 @@ export interface ChartData {
   colors?: string[];
 }
 
-export interface DashboardParams {
-  year?: number;
-  month?: number;
+export interface DashboardFilters {
+  store_id?: string;
+  owner_name?: string;
+  date_from?: string;
+  date_to?: string;
+}
+
+export interface AvailableFilters {
+  stores: { id: string; name: string; owner_name: string }[];
+  owners: string[];
+  date_range: { min_date: string; max_date: string };
 }
 
 export const dashboardService = {
-  async getSummary(params?: DashboardParams): Promise<DashboardSummary> {
-    const queryParams: Record<string, number> = {};
-    if (params?.year) queryParams.year = params.year;
-    if (params?.month) queryParams.month = params.month;
-    const response = await api.get('/api/cnab/dashboard/summary', { params: queryParams });
+  async getAvailableFilters(): Promise<AvailableFilters> {
+    const response = await api.get('/api/cnab/dashboard/available-filters');
     return response.data;
   },
-  async getBalanceByStore(params?: DashboardParams): Promise<ChartData> {
-    const queryParams: Record<string, number> = {};
-    if (params?.year) queryParams.year = params.year;
-    if (params?.month) queryParams.month = params.month;
-    const response = await api.get('/api/cnab/dashboard/balance-by-store', { params: queryParams });
+
+  async getSummary(params?: DashboardFilters): Promise<DashboardSummary> {
+    const response = await api.get('/api/cnab/dashboard/summary', { params });
     return response.data;
   },
-  async getTransactionsByType(params?: DashboardParams): Promise<ChartData> {
-    const queryParams: Record<string, number> = {};
-    if (params?.year) queryParams.year = params.year;
-    if (params?.month) queryParams.month = params.month;
-    const response = await api.get('/api/cnab/dashboard/transactions-by-type', { params: queryParams });
+
+  async getBalanceByStore(params?: DashboardFilters): Promise<ChartData> {
+    const response = await api.get('/api/cnab/dashboard/balance-by-store', { params });
     return response.data;
   },
-  async getTransactionsTimeline(params?: DashboardParams): Promise<ChartData> {
-    const queryParams: Record<string, number> = {};
-    if (params?.year) queryParams.year = params.year;
-    if (params?.month) queryParams.month = params.month;
-    const response = await api.get('/api/cnab/dashboard/uploads-timeline', { params: queryParams });
+
+  async getTransactionsByType(params?: DashboardFilters): Promise<ChartData> {
+    const response = await api.get('/api/cnab/dashboard/transactions-by-type', { params });
+    return response.data;
+  },
+
+  async getTransactionsTimeline(params?: DashboardFilters): Promise<ChartData> {
+    const response = await api.get('/api/cnab/dashboard/uploads-timeline', { params });
     return response.data;
   },
 };

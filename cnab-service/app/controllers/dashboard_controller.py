@@ -1,11 +1,13 @@
 """Controller for dashboard statistics aggregation."""
 
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.repositories.dashboard_repository import DashboardRepository, _TYPE_COLORS
 from app.schemas.dashboard_schema import (
+    AvailableFiltersResponse,
     BalanceByStoreResponse,
     DashboardSummaryResponse,
     TransactionsByTypeResponse,
@@ -21,11 +23,18 @@ class DashboardController:
 
     def get_summary(
         self,
-        year: int | None = None,
-        month: int | None = None,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
     ) -> DashboardSummaryResponse:
         """Returns overall counts and financial totals."""
-        row = self._repo.get_summary(year=year, month=month)
+        row = self._repo.get_summary(
+            store_id=store_id,
+            owner_name=owner_name,
+            date_from=date_from,
+            date_to=date_to,
+        )
         return DashboardSummaryResponse(
             total_stores=int(row["total_stores"]),
             total_transactions=int(row["total_transactions"]),
@@ -36,22 +45,36 @@ class DashboardController:
 
     def get_balance_by_store(
         self,
-        year: int | None = None,
-        month: int | None = None,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
     ) -> BalanceByStoreResponse:
         """Returns store names and balances for bar chart."""
-        rows = self._repo.get_balance_by_store(year=year, month=month)
+        rows = self._repo.get_balance_by_store(
+            store_id=store_id,
+            owner_name=owner_name,
+            date_from=date_from,
+            date_to=date_to,
+        )
         labels = [row["store_name"] for row in rows]
         data = [Decimal(str(row["balance"])) for row in rows]
         return BalanceByStoreResponse(labels=labels, data=data)
 
     def get_transactions_by_type(
         self,
-        year: int | None = None,
-        month: int | None = None,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
     ) -> TransactionsByTypeResponse:
         """Returns transaction counts per type with colors for pie chart."""
-        rows = self._repo.get_transactions_by_type(year=year, month=month)
+        rows = self._repo.get_transactions_by_type(
+            store_id=store_id,
+            owner_name=owner_name,
+            date_from=date_from,
+            date_to=date_to,
+        )
         labels = [row["type_description"] for row in rows]
         data = [int(row["transaction_count"]) for row in rows]
         colors = [_TYPE_COLORS[i % len(_TYPE_COLORS)] for i in range(len(rows))]
@@ -59,11 +82,18 @@ class DashboardController:
 
     def get_transactions_timeline(
         self,
-        year: int | None = None,
-        month: int | None = None,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
     ) -> UploadsTimelineResponse:
         """Returns transaction counts grouped by date for line chart."""
-        rows = self._repo.get_transactions_timeline(year=year, month=month)
+        rows = self._repo.get_transactions_timeline(
+            store_id=store_id,
+            owner_name=owner_name,
+            date_from=date_from,
+            date_to=date_to,
+        )
         labels = []
         for row in rows:
             date_val = row["transaction_date"]
@@ -79,3 +109,16 @@ class DashboardController:
                     labels.append(str(date_val))
         data = [int(row["transaction_count"]) for row in rows]
         return UploadsTimelineResponse(labels=labels, data=data)
+
+    def get_available_filters(self) -> AvailableFiltersResponse:
+        """Returns stores, owner names and date range for filter dropdowns."""
+        result: dict[str, Any] = self._repo.get_available_filters()
+        stores = [
+            {"id": row["id"], "name": row["name"], "owner_name": row["owner_name"]}
+            for row in result["stores"]
+        ]
+        return AvailableFiltersResponse(
+            stores=stores,
+            owners=result["owners"],
+            date_range=result["date_range"],
+        )

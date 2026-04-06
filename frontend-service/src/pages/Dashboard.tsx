@@ -16,27 +16,9 @@ import {
   dashboardService,
   type DashboardSummary,
   type ChartData,
+  type DashboardFilters,
+  type AvailableFilters,
 } from '../services/dashboardService';
-
-const MONTHS = [
-  { value: null, label: 'Todos' },
-  { value: 1, label: 'Janeiro' },
-  { value: 2, label: 'Fevereiro' },
-  { value: 3, label: 'Março' },
-  { value: 4, label: 'Abril' },
-  { value: 5, label: 'Maio' },
-  { value: 6, label: 'Junho' },
-  { value: 7, label: 'Julho' },
-  { value: 8, label: 'Agosto' },
-  { value: 9, label: 'Setembro' },
-  { value: 10, label: 'Outubro' },
-  { value: 11, label: 'Novembro' },
-  { value: 12, label: 'Dezembro' },
-] as const;
-
-const CURRENT_YEAR = new Date().getFullYear();
-const START_YEAR = 2019;
-const YEARS = Array.from({ length: CURRENT_YEAR - START_YEAR + 1 }, (_, i) => START_YEAR + i);
 
 function formatCurrency(value: string): string {
   const num = parseFloat(value);
@@ -55,20 +37,63 @@ interface DashboardData {
 }
 
 const Dashboard: FC = () => {
+  const [availableFilters, setAvailableFilters] = useState<AvailableFilters | null>(null);
+  const [filtersLoading, setFiltersLoading] = useState(true);
+
+  const [selectedStore, setSelectedStore] = useState<string>('');
+  const [selectedOwner, setSelectedOwner] = useState<string>('');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [year, setYear] = useState<number>(START_YEAR);
-  const [month, setMonth] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    const load = async () => {
+    const loadFilters = async () => {
+      try {
+        const filters = await dashboardService.getAvailableFilters();
+        if (!cancelled) {
+          setAvailableFilters(filters);
+          setDateFrom(filters.date_range.min_date);
+          setDateTo(filters.date_range.max_date);
+        }
+      } catch {
+        if (!cancelled) {
+          setAvailableFilters({ stores: [], owners: [], date_range: { min_date: '', max_date: '' } });
+        }
+      } finally {
+        if (!cancelled) {
+          setFiltersLoading(false);
+        }
+      }
+    };
+
+    loadFilters();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (filtersLoading) return;
+
+    let cancelled = false;
+
+    const loadData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const params = { year, month: month ?? undefined };
+        const params: DashboardFilters = {
+          store_id: selectedStore || undefined,
+          owner_name: selectedOwner || undefined,
+          date_from: dateFrom || undefined,
+          date_to: dateTo || undefined,
+        };
+
         const [summary, balanceByStore, transactionsByType, transactionsTimeline] =
           await Promise.all([
             dashboardService.getSummary(params),
@@ -91,12 +116,12 @@ const Dashboard: FC = () => {
       }
     };
 
-    load();
+    loadData();
 
     return () => {
       cancelled = true;
     };
-  }, [year, month]);
+  }, [filtersLoading, selectedStore, selectedOwner, dateFrom, dateTo]);
 
   const balanceVariant = (value: string): 'success' | 'error' => {
     return parseFloat(value) >= 0 ? 'success' : 'error';
@@ -106,34 +131,65 @@ const Dashboard: FC = () => {
     <Layout>
       <div className="space-y-6">
         <PageTitle
-          title="Dashboard"
-          subtitle="Visão geral das transações CNAB importadas."
+          title="Dashboard de Conciliação Bancária"
+          subtitle="Visão geral das transações importadas e saúde financeira por unidade."
         />
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-muted text-sm">Ano:</span>
+        <div className="surface-card p-4 flex flex-wrap gap-4 items-end">
+          <div>
+            <label className="text-muted text-xs block mb-1">Loja</label>
             <select
               className="filter-input rounded-lg px-3 py-1.5 text-sm [color-scheme:dark]"
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
+              value={selectedStore}
+              onChange={(e) => setSelectedStore(e.target.value)}
+              disabled={filtersLoading}
             >
-              {YEARS.map((y) => (
-                <option key={y} value={y}>{y}</option>
+              <option value="">Todas</option>
+              {availableFilters?.stores.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name}
+                </option>
               ))}
             </select>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-muted text-sm">Mês:</span>
+
+          <div>
+            <label className="text-muted text-xs block mb-1">Representante</label>
             <select
               className="filter-input rounded-lg px-3 py-1.5 text-sm [color-scheme:dark]"
-              value={month ?? ''}
-              onChange={(e) => setMonth(e.target.value === '' ? null : Number(e.target.value))}
+              value={selectedOwner}
+              onChange={(e) => setSelectedOwner(e.target.value)}
+              disabled={filtersLoading}
             >
-              {MONTHS.map((m) => (
-                <option key={m.value ?? 'all'} value={m.value ?? ''}>{m.label}</option>
+              <option value="">Todos</option>
+              {availableFilters?.owners.map((owner) => (
+                <option key={owner} value={owner}>
+                  {owner}
+                </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="text-muted text-xs block mb-1">Período de</label>
+            <input
+              type="date"
+              className="filter-input rounded-lg px-3 py-1.5 text-sm [color-scheme:dark]"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              disabled={filtersLoading}
+            />
+          </div>
+
+          <div>
+            <label className="text-muted text-xs block mb-1">até</label>
+            <input
+              type="date"
+              className="filter-input rounded-lg px-3 py-1.5 text-sm [color-scheme:dark]"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              disabled={filtersLoading}
+            />
           </div>
         </div>
 
