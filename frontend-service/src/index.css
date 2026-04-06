@@ -427,3 +427,15 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+/* === StatCard corner gradients (portfolio pattern) === */
+.stat-corner-default { background: linear-gradient(to bottom right, #4FFA7B, #02BE3B); }
+.stat-corner-success { background: linear-gradient(to bottom right, #02BE3B, #018a2b); }
+.stat-corner-error { background: linear-gradient(to bottom right, #FF4444, #cc0000); }
+.stat-corner-warning { background: linear-gradient(to bottom right, #FFB800, #cc9300); }
+
+/* === StatCard icon backgrounds === */
+.stat-icon-bg-default { background-color: rgba(79, 250, 123, 0.15); }
+.stat-icon-bg-success { background-color: rgba(2, 190, 59, 0.15); }
+.stat-icon-bg-error { background-color: rgba(255, 68, 68, 0.15); }
+.stat-icon-bg-warning { background-color: rgba(255, 184, 0, 0.15); }
