@@ -27,13 +27,15 @@ class HealthView(views.APIView):
         operation_description="Check whether the service is running.",
     )
     def get(self, request: Request, format: str = None) -> Response:
-        return Response({
-            "status": "healthy",
-            "system_name": SERVICE_NAME,
-            "version": os.getenv("SYSTEM_VERSION", DEFAULT_VERSION) or DEFAULT_VERSION,
-            "environment": os.getenv("ENVIRONMENT", "development"),
-            "timestamp": now(),
-        })
+        return Response(
+            {
+                "status": "healthy",
+                "system_name": SERVICE_NAME,
+                "version": os.getenv("SYSTEM_VERSION", DEFAULT_VERSION) or DEFAULT_VERSION,
+                "environment": os.getenv("ENVIRONMENT", "development"),
+                "timestamp": now(),
+            }
+        )
 
 
 class ReadinessView(views.APIView):
@@ -46,11 +48,13 @@ class ReadinessView(views.APIView):
         try:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT 1")
-            return Response({
-                "status": "ready",
-                "system_name": SERVICE_NAME,
-                "timestamp": now(),
-            })
+            return Response(
+                {
+                    "status": "ready",
+                    "system_name": SERVICE_NAME,
+                    "timestamp": now(),
+                }
+            )
         except Exception as e:
             return Response(
                 {
@@ -70,11 +74,13 @@ class LivenessView(views.APIView):
     permission_classes = []
 
     def get(self, request: Request, format: str = None) -> Response:
-        return Response({
-            "status": "alive",
-            "system_name": SERVICE_NAME,
-            "timestamp": now(),
-        })
+        return Response(
+            {
+                "status": "alive",
+                "system_name": SERVICE_NAME,
+                "timestamp": now(),
+            }
+        )
 
 
 health_view = HealthView.as_view()

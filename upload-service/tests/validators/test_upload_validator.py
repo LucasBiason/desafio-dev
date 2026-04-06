@@ -1,6 +1,5 @@
 """Tests for UploadValidator."""
 
-import pytest
 from unittest.mock import patch
 
 from app.validators.upload_validator import UploadValidator

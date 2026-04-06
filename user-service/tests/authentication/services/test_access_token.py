@@ -3,8 +3,8 @@
 import pytest
 from rest_framework.exceptions import AuthenticationFailed
 
-from authentication.services.access_token import AccessToken
 from authentication.exceptions import InvalidTokenException, TokenExpiredException
+from authentication.services.access_token import AccessToken
 
 
 class TestAccessToken:

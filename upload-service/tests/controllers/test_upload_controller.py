@@ -1,9 +1,9 @@
 """Tests for UploadController."""
 
 import uuid
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
 from fastapi import HTTPException
 
 from app.controllers.upload_controller import UploadController

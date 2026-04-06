@@ -36,9 +36,7 @@ class TestCreateUser:
 
     def test_create_user_as_superuser(self, api_client: APIClient) -> None:
         """Superuser creates a user successfully."""
-        superuser = User.objects.create_superuser(
-            username="admin", email="admin@example.com", password="admin123"
-        )
+        superuser = User.objects.create_superuser(username="admin", email="admin@example.com", password="admin123")
         from authentication.services.access_token import AccessToken
 
         token, _ = AccessToken().encode(str(superuser.id))
@@ -183,12 +181,8 @@ class TestDestroyUser:
 
     def test_destroy_as_staff(self, api_client: APIClient) -> None:
         """Staff soft-deletes a user by setting is_active to False."""
-        staff = User.objects.create_user(
-            username="staff", email="staff@example.com", password="pass123", is_staff=True
-        )
-        target = User.objects.create_user(
-            username="target", email="target@example.com", password="pass123"
-        )
+        staff = User.objects.create_user(username="staff", email="staff@example.com", password="pass123", is_staff=True)
+        target = User.objects.create_user(username="target", email="target@example.com", password="pass123")
         from authentication.services.access_token import AccessToken
 
         token, _ = AccessToken().encode(str(staff.id))

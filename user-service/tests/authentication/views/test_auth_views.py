@@ -111,7 +111,6 @@ class TestValidator:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-
 @pytest.mark.django_db
 class TestHealthCheck:
     """GET /health/."""

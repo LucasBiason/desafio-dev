@@ -2,15 +2,14 @@
 
 import io
 import uuid
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
 from app.models.upload_history import UploadHistory
-
 
 USER_DATA = {"id": 1, "email": "user@test.com"}
 
@@ -24,8 +23,8 @@ def _make_upload_history(filename="test.txt", status="pending"):
     upload.status = status
     upload.total_transactions = 0
     upload.error_message = None
-    upload.created_at = datetime.now(timezone.utc)
-    upload.updated_at = datetime.now(timezone.utc)
+    upload.created_at = datetime.now(UTC)
+    upload.updated_at = datetime.now(UTC)
     return upload
 
 

@@ -1,7 +1,7 @@
 """Tests for CnabServiceClient."""
 
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from cryptography.fernet import Fernet
