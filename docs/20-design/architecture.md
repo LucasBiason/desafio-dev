@@ -51,9 +51,10 @@ flowchart TB
 | user-service | Django 5 + DRF + PyJWT | 7001 | Autenticação JWT e gestão de usuários |
 | upload-service | FastAPI + cnab-shared | 7003 | Upload de arquivos CNAB e parsing |
 | upload-worker | mesma imagem do upload-service | — | Processamento de uploads pendentes (polling a cada 10s) |
-| cnab-service | FastAPI + SQLAlchemy + Pydantic V2 | 7002 | Armazenamento, consulta de lojas/transações e analytics do dashboard |
-| cnab-shared | Python package | — | Biblioteca compartilhada (BaseModel, BaseRepository, middleware, exceptions) |
-| frontend-service | React 18 + TypeScript + Vite + Tailwind + Nginx | 7000 | Interface web (Nginx como proxy reverso), paleta bycoders_ |
+| cnab-service | FastAPI + SQLAlchemy + Pydantic V2 | 7002 | Armazenamento e consulta de lojas e transações |
+| cnab-dashboard | FastAPI + SQL otimizado | 7004 | Dashboard analítico read-only (consulta cnab_data) |
+| cnab-shared | Python package | — | Biblioteca compartilhada (BaseModel, BaseRepository, auth, middleware, exceptions) |
+| frontend-service | React 19 + TypeScript 5.9 + Vite 8 + Tailwind + Recharts + Nginx | 7000 | Interface web (Nginx como proxy reverso), paleta bycoders_ |
 
 ## Comunicação entre Serviços
 
