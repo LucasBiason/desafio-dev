@@ -3,7 +3,7 @@
 import os
 
 os.environ["TESTING"] = "true"
-os.environ["DATABASE_URL"] = "sqlite:///./test_cnab.db"
+os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["SERVICE_SECRET_KEY"] = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
 import pytest
@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 
 from cnab_shared.database.database import Base
 
-engine = create_engine("sqlite:///./test_cnab.db", connect_args={"check_same_thread": False})
+engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
 TestSession = sessionmaker(bind=engine)
 
 

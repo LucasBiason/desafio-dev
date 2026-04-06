@@ -1,10 +1,10 @@
-"""Shared FastAPI dependencies for JWT and service authentication."""
+"""FastAPI dependency for JWT authentication via user-service."""
 
 import logging
 
 from fastapi import HTTPException, Request
 
-from cnab_shared import UserService
+from cnab_shared.services.user_service import UserService
 
 logger = logging.getLogger(__name__)
 

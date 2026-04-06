@@ -1,17 +1,16 @@
-"""API routes for internal service-to-service transaction ingestion."""
+"""API routes for upload service transaction ingestion."""
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.controllers.internal_controller import InternalController
-from app.schemas.internal_schema import BulkTransactionRequest, BulkTransactionResponse
-from app.validators.fernet_middleware import require_service_token
-from cnab_shared import get_db
+from app.controllers.upload_controller import UploadController
+from app.schemas.upload_schema import BulkTransactionRequest, BulkTransactionResponse
+from cnab_shared import get_db, require_service_token
 
-internal_router = APIRouter(tags=["Internal"])
+upload_router = APIRouter(tags=["Upload"])
 
 
-@internal_router.post("/internal/transactions/", response_model=BulkTransactionResponse, status_code=201)
+@upload_router.post("/transactions/upload/", response_model=BulkTransactionResponse, status_code=201)
 def receive_bulk_transactions(
     payload: BulkTransactionRequest,
     db: Session = Depends(get_db),
@@ -21,7 +20,7 @@ def receive_bulk_transactions(
 
     Authenticated via Fernet token in the X-Service-Token header.
     """
-    controller = InternalController(db=db)
+    controller = UploadController(db=db)
     result = controller.process_bulk_transactions(
         upload_id=payload.upload_id,
         transactions=[t.model_dump() for t in payload.transactions],

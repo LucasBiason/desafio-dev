@@ -1,9 +1,9 @@
-"""Tests for InternalController."""
+"""Tests for UploadController."""
 
 import uuid
 from unittest.mock import MagicMock, patch
 
-from app.controllers.internal_controller import InternalController
+from app.controllers.upload_controller import UploadController
 from app.models.store import Store
 from app.models.transaction_type import TransactionType
 
@@ -41,12 +41,12 @@ def _make_transaction_dict(**overrides) -> dict:
     return base
 
 
-class TestInternalController:
-    """Tests for InternalController.process_bulk_transactions."""
+class TestUploadController:
+    """Tests for UploadController.process_bulk_transactions."""
 
-    def _make_controller(self) -> InternalController:
-        """Creates an InternalController with a mock db session."""
-        return InternalController(db=MagicMock())
+    def _make_controller(self) -> UploadController:
+        """Creates an UploadController with a mock db session."""
+        return UploadController(db=MagicMock())
 
     def test_processes_transactions_and_returns_summary(self):
         """process_bulk_transactions returns correct total_inserted and stores_created."""
@@ -59,6 +59,8 @@ class TestInternalController:
         with (
             patch.object(controller._store_repo, "get_or_create", return_value=(mock_store, True)),
             patch.object(controller._transaction_repo, "get_type_by_code", return_value=mock_type),
+            patch.object(controller._transaction_repo, "exists_by_hash", return_value=False),
+            patch.object(controller._transaction_repo, "exists_by_fields", return_value=False),
             patch.object(controller._transaction_repo, "bulk_create", return_value=1),
         ):
             result = controller.process_bulk_transactions(
@@ -80,6 +82,8 @@ class TestInternalController:
         with (
             patch.object(controller._store_repo, "get_or_create", return_value=(mock_store, False)),
             patch.object(controller._transaction_repo, "get_type_by_code", return_value=mock_type),
+            patch.object(controller._transaction_repo, "exists_by_hash", return_value=False),
+            patch.object(controller._transaction_repo, "exists_by_fields", return_value=False),
             patch.object(controller._transaction_repo, "bulk_create", return_value=1),
         ):
             result = controller.process_bulk_transactions(
@@ -143,6 +147,8 @@ class TestInternalController:
                 side_effect=get_or_create_results,
             ),
             patch.object(controller._transaction_repo, "get_type_by_code", return_value=mock_type),
+            patch.object(controller._transaction_repo, "exists_by_hash", return_value=False),
+            patch.object(controller._transaction_repo, "exists_by_fields", return_value=False),
             patch.object(controller._transaction_repo, "bulk_create", return_value=2),
         ):
             result = controller.process_bulk_transactions(
@@ -152,6 +158,49 @@ class TestInternalController:
 
         assert result["stores_created"] == 2
         assert result["total_inserted"] == 2
+
+    def test_duplicate_by_hash_skips_transaction(self):
+        """process_bulk_transactions skips a transaction when exists_by_hash returns True."""
+        controller = self._make_controller()
+        transactions = [_make_transaction_dict()]
+
+        mock_store, _ = _make_mock_store(created=False)
+        mock_type = _make_mock_type()
+
+        with (
+            patch.object(controller._store_repo, "get_or_create", return_value=(mock_store, False)),
+            patch.object(controller._transaction_repo, "get_type_by_code", return_value=mock_type),
+            patch.object(controller._transaction_repo, "exists_by_hash", return_value=True),
+            patch.object(controller._transaction_repo, "bulk_create", return_value=0),
+        ):
+            result = controller.process_bulk_transactions(
+                upload_id=str(uuid.uuid4()),
+                transactions=transactions,
+            )
+
+        assert result["total_inserted"] == 0
+
+    def test_duplicate_by_fields_skips_transaction(self):
+        """process_bulk_transactions skips a transaction when exists_by_fields returns True."""
+        controller = self._make_controller()
+        transactions = [_make_transaction_dict()]
+
+        mock_store, _ = _make_mock_store(created=False)
+        mock_type = _make_mock_type()
+
+        with (
+            patch.object(controller._store_repo, "get_or_create", return_value=(mock_store, False)),
+            patch.object(controller._transaction_repo, "get_type_by_code", return_value=mock_type),
+            patch.object(controller._transaction_repo, "exists_by_hash", return_value=False),
+            patch.object(controller._transaction_repo, "exists_by_fields", return_value=True),
+            patch.object(controller._transaction_repo, "bulk_create", return_value=0),
+        ):
+            result = controller.process_bulk_transactions(
+                upload_id=str(uuid.uuid4()),
+                transactions=transactions,
+            )
+
+        assert result["total_inserted"] == 0
 
     def test_upload_id_preserved_in_result(self):
         """process_bulk_transactions returns the same upload_id that was provided."""

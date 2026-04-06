@@ -46,6 +46,27 @@ class TestCnabServiceClient:
         mock_post.assert_called_once()
 
     @patch("app.services.cnab_service_client.httpx.post")
+    def test_create_transactions_batching(self, mock_post, fernet_key):
+        """Sends multiple batches when transactions exceed batch size."""
+        os.environ["SERVICE_SECRET_KEY"] = fernet_key
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {
+            "upload_id": "test-uuid",
+            "total_inserted": 1000,
+            "stores_created": 0,
+        }
+        mock_post.return_value = mock_response
+
+        client = CnabServiceClient()
+        transactions = [{"type_code": 1}] * 2500
+        result = client.create_transactions("test-uuid", transactions)
+
+        assert mock_post.call_count == 3
+        assert result["total_inserted"] == 3000
+        assert result["stores_created"] == 0
+
+    @patch("app.services.cnab_service_client.httpx.post")
     def test_create_transactions_failure_raises(self, mock_post, fernet_key):
         """Raises RuntimeError on non-201 response."""
         os.environ["SERVICE_SECRET_KEY"] = fernet_key
@@ -56,4 +77,4 @@ class TestCnabServiceClient:
 
         client = CnabServiceClient()
         with pytest.raises(RuntimeError, match="cnab-service error: 500"):
-            client.create_transactions("test-uuid", [])
+            client.create_transactions("test-uuid", [{"type_code": 1}])

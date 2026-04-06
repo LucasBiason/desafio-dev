@@ -19,6 +19,9 @@ from cnab_shared.middleware.exceptions_middleware import CatchExceptionsMiddlewa
 from cnab_shared.middleware.logging_middleware import LoggingMiddleware
 from cnab_shared.routers.health_router import create_health_router
 from cnab_shared.services.user_service import UserService
+from cnab_shared.services.fernet_validator import FernetValidator
+from cnab_shared.dependencies.require_jwt import require_jwt
+from cnab_shared.dependencies.require_service_token import require_service_token
 from cnab_shared.logging.config import configure_logging, get_logger
 
 __all__ = [
@@ -41,6 +44,9 @@ __all__ = [
     "LoggingMiddleware",
     "create_health_router",
     "UserService",
+    "FernetValidator",
+    "require_jwt",
+    "require_service_token",
     "configure_logging",
     "get_logger",
 ]

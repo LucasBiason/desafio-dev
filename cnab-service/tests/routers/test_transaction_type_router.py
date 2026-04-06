@@ -15,7 +15,7 @@ USER_DATA = {"id": 1, "email": "user@test.com"}
 @pytest.fixture
 def auth_client():
     """Returns a TestClient with JWT auth bypassed."""
-    with patch("app.dependencies.UserService") as mock_user_service:
+    with patch("cnab_shared.dependencies.require_jwt.UserService") as mock_user_service:
         mock_user_service.return_value.validate_token.return_value = USER_DATA
         with TestClient(app, raise_server_exceptions=False) as client:
             yield client

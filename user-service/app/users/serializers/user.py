@@ -12,6 +12,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
+        ref_name = "ManageUser"
         fields = [
             "id",
             "username",
