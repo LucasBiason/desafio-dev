@@ -8,6 +8,8 @@ import {
 import Layout from '../components/Layout';
 import DateInput from '../components/DateInput';
 import PageTitle from '../components/PageTitle';
+import SectionDivider from '../components/SectionDivider';
+import ToggleGroup from '../components/ToggleGroup';
 import { formatCurrency, formatDateTime } from '../utils/formatters';
 import StatCard from '../components/charts/StatCard';
 import BarChartCard from '../components/charts/BarChartCard';
@@ -23,51 +25,11 @@ import {
   type TransactionDetail,
 } from '../services/dashboardService';
 
-type NatureFilter = 'todas' | 'entrada' | 'saida';
-
-interface SectionDividerProps {
-  label: string;
-}
-
-const SectionDivider: FC<SectionDividerProps> = ({ label }) => (
-  <div className="flex items-center gap-3 mt-8 mb-4">
-    <div className="h-px flex-1 border-surface border-t" />
-    <span className="text-muted text-xs font-semibold uppercase tracking-wider">{label}</span>
-    <div className="h-px flex-1 border-surface border-t" />
-  </div>
-);
-
-interface NatureToggleProps {
-  value: NatureFilter;
-  onChange: (value: NatureFilter) => void;
-}
-
-const NATURE_OPTIONS: { value: NatureFilter; label: string }[] = [
+const NATURE_OPTIONS = [
   { value: 'todas', label: 'Todas' },
   { value: 'entrada', label: 'Entradas' },
   { value: 'saida', label: 'Saídas' },
 ];
-
-const NatureToggle: FC<NatureToggleProps> = ({ value, onChange }) => (
-  <div className="flex items-center gap-1 surface-card p-1">
-    {NATURE_OPTIONS.map((option) => (
-      <button
-        key={option.value}
-        type="button"
-        onClick={() => onChange(option.value)}
-        className={[
-          'px-3 py-1 rounded text-xs font-medium transition-colors',
-          value === option.value
-            ? 'bg-accent/20 text-accent'
-            : 'text-muted hover:text-secondary',
-        ].join(' ')}
-        aria-pressed={value === option.value}
-      >
-        {option.label}
-      </button>
-    ))}
-  </div>
-);
 
 interface DashboardData {
   kpis: AdvancedKPIs;
@@ -154,7 +116,7 @@ const Dashboard: FC = () => {
   const [selectedOwner, setSelectedOwner] = useState<string>('');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
-  const [natureFilter, setNatureFilter] = useState<NatureFilter>('todas');
+  const [natureFilter, setNatureFilter] = useState('todas');
 
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -460,7 +422,7 @@ const Dashboard: FC = () => {
               <div className="px-5 pt-5 pb-3 flex items-center justify-between gap-4">
                 <h3 className="section-title">Detalhamento de Transações</h3>
                 <div className="flex items-center gap-3">
-                  <NatureToggle value={natureFilter} onChange={setNatureFilter} />
+                  <ToggleGroup options={NATURE_OPTIONS} value={natureFilter} onChange={setNatureFilter} />
                   <span className="text-muted text-xs">
                     {detailCount} registro{detailCount !== 1 ? 's' : ''} no total
                   </span>
