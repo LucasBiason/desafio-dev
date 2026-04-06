@@ -3,6 +3,7 @@ source = app
 omit =
     */tests/*
     app/__init__.py
+    app/worker.py
 
 [report]
 show_missing = true

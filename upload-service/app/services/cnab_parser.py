@@ -2,10 +2,7 @@
 
 
 class CnabParser:
-    """Parses CNAB files in fixed-width format into structured transaction dicts."""
-
     def parse(self, content: bytes) -> list[dict]:
-        """Parses the full file content and returns a list of transaction dicts."""
         lines = content.decode("utf-8", errors="replace").splitlines()
         transactions = []
         for line in lines:

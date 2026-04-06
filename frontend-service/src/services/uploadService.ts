@@ -1,23 +1,5 @@
 import api from './api';
-
-export interface UploadResponse {
-  id: string;
-  original_filename: string;
-  file_path: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  total_transactions: number;
-  error_message: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface UploadListResponse {
-  count: number;
-  page: number;
-  page_size: number;
-  pages: number;
-  results: UploadResponse[];
-}
+import type { UploadResponse, UploadListResponse, UploadFilters } from '../types/upload';
 
 export const uploadService = {
   async upload(file: File): Promise<UploadResponse> {
@@ -32,7 +14,7 @@ export const uploadService = {
   async list(
     page = 1,
     pageSize = 10,
-    filters?: { status?: string; filename?: string; date_from?: string; date_to?: string },
+    filters?: UploadFilters,
   ): Promise<UploadListResponse> {
     const params: Record<string, string | number> = { page, page_size: pageSize };
     if (filters?.status) params.status = filters.status;
@@ -55,3 +37,5 @@ export const uploadService = {
     return response.data;
   },
 };
+
+export type { UploadResponse, UploadListResponse, UploadFilters };

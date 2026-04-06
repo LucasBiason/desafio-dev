@@ -7,8 +7,6 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 
 class UploadValidator:
-    """Validates uploaded CNAB files before processing."""
-
     @staticmethod
     def validate_file(filename: str, content: bytes) -> dict:
         """Validates file extension, size, and content.

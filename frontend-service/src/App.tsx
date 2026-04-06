@@ -11,11 +11,9 @@ function RootRedirect() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center"
-        style={{ background: 'linear-gradient(135deg, #171616 0%, #0d0d0d 50%, #171616 100%)' }}
-      >
+      <div className="min-h-screen flex items-center justify-center bg-page">
         <div
-          className="w-10 h-10 border-2 border-[#2a2a2a] border-t-[#4FFA7B] rounded-full animate-spin"
+          className="spinner-track spinner-accent w-10 h-10 border-2 border-t-2 rounded-full animate-spin"
           role="status"
           aria-label="Carregando..."
         />
