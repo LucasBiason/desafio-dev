@@ -10,18 +10,36 @@ interface StatCardProps {
   variant?: 'default' | 'success' | 'error' | 'warning';
 }
 
-const variantValueClass: Record<NonNullable<StatCardProps['variant']>, string> = {
-  default: 'text-primary',
-  success: 'text-success',
-  error: 'text-error',
-  warning: 'text-warning',
-};
-
-const variantIconClass: Record<NonNullable<StatCardProps['variant']>, string> = {
-  default: 'stat-card-icon-default',
-  success: 'stat-card-icon-success',
-  error: 'stat-card-icon-error',
-  warning: 'stat-card-icon-warning',
+const VARIANT_CONFIG: Record<NonNullable<StatCardProps['variant']>, {
+  valueClass: string;
+  iconBg: string;
+  iconColor: string;
+  cornerGradient: string;
+}> = {
+  default: {
+    valueClass: 'text-primary',
+    iconBg: 'stat-icon-bg-default',
+    iconColor: 'text-accent',
+    cornerGradient: 'stat-corner-default',
+  },
+  success: {
+    valueClass: 'text-success',
+    iconBg: 'stat-icon-bg-success',
+    iconColor: 'text-success',
+    cornerGradient: 'stat-corner-success',
+  },
+  error: {
+    valueClass: 'text-error',
+    iconBg: 'stat-icon-bg-error',
+    iconColor: 'text-error',
+    cornerGradient: 'stat-corner-error',
+  },
+  warning: {
+    valueClass: 'text-warning',
+    iconBg: 'stat-icon-bg-warning',
+    iconColor: 'text-warning',
+    cornerGradient: 'stat-corner-warning',
+  },
 };
 
 const StatCard: FC<StatCardProps> = memo(({
@@ -31,23 +49,26 @@ const StatCard: FC<StatCardProps> = memo(({
   icon,
   variant = 'default',
 }) => {
+  const config = VARIANT_CONFIG[variant];
+
   return (
-    <div className="surface-card p-5 flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <span className="text-muted text-xs font-semibold uppercase tracking-wider">
-          {title}
-        </span>
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${variantIconClass[variant]}`}>
-          <FontAwesomeIcon icon={icon} />
+    <div className="surface-card relative overflow-hidden p-4 hover:border-hover transition-all group">
+      {/* Corner gradient */}
+      <div className={`absolute top-0 right-0 w-20 h-20 rounded-bl-full opacity-20 ${config.cornerGradient}`} />
+
+      <div className="relative flex items-center gap-3">
+        <div className={`${config.iconBg} rounded-lg p-2.5 flex-shrink-0`}>
+          <FontAwesomeIcon icon={icon} size="sm" className={config.iconColor} />
         </div>
-      </div>
-      <div>
-        <span className={`text-2xl font-bold ${variantValueClass[variant]}`}>
-          {value}
-        </span>
-        {subtitle && (
-          <p className="text-muted text-xs mt-1">{subtitle}</p>
-        )}
+        <div className="flex-1 min-w-0">
+          <p className={`text-2xl font-bold leading-tight ${config.valueClass}`}>
+            {value}
+          </p>
+          <p className="text-muted text-xs truncate">{title}</p>
+          {subtitle && (
+            <p className="text-muted text-xs mt-0.5 opacity-60">{subtitle}</p>
+          )}
+        </div>
       </div>
     </div>
   );
