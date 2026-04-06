@@ -5,7 +5,6 @@ import {
   Pie,
   Cell,
   Tooltip,
-  Legend,
 } from 'recharts';
 
 interface PieChartCardProps {
@@ -36,63 +35,64 @@ const CustomTooltip: FC<CustomTooltipProps> = ({ active, payload }) => {
   );
 };
 
-interface LegendPayloadItem {
-  value: string;
-  color: string;
-}
-
-interface CustomLegendProps {
-  payload?: LegendPayloadItem[];
-}
-
-const CustomLegend: FC<CustomLegendProps> = ({ payload }) => {
-  if (!payload) return null;
-  return (
-    <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
-      {payload.map((entry, index) => (
-        <li key={index} className="flex items-center gap-1.5">
-          <span
-            className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
-            style={{ backgroundColor: entry.color }}
-          />
-          <span className="text-muted text-xs">{entry.value}</span>
-        </li>
-      ))}
-    </ul>
-  );
-};
-
 const PieChartCard: FC<PieChartCardProps> = memo(({ title, labels, data, colors }) => {
   const chartData = labels.map((label, index) => ({
     name: label,
     value: data[index] ?? 0,
   }));
 
+  const total = chartData.reduce((sum, entry) => sum + entry.value, 0);
+
   return (
     <div className="surface-card p-5 flex flex-col gap-4">
       <h3 className="section-title">{title}</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            innerRadius="55%"
-            outerRadius="80%"
-            paddingAngle={2}
-            dataKey="value"
-          >
-            {chartData.map((_, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={colors[index % colors.length]}
-              />
-            ))}
-          </Pie>
-          <Tooltip content={<CustomTooltip />} />
-          <Legend content={<CustomLegend />} />
-        </PieChart>
-      </ResponsiveContainer>
+      <div className="flex items-center gap-4">
+        <div className="w-1/2 min-w-0">
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                innerRadius="55%"
+                outerRadius="80%"
+                paddingAngle={2}
+                dataKey="value"
+              >
+                {chartData.map((_, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={colors[index % colors.length]}
+                  />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="w-1/2 min-w-0 flex flex-col gap-1.5">
+          {chartData.map((entry, index) => {
+            const percentage = total > 0 ? ((entry.value / total) * 100).toFixed(1) : '0.0';
+            const countStr = String(entry.value).padStart(2, ' ');
+            return (
+              <div key={index} className="flex items-center gap-2 text-xs">
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: colors[index % colors.length] }}
+                />
+                <span className="text-secondary truncate flex-1">{entry.name}</span>
+                <span className="text-muted whitespace-nowrap">
+                  {countStr} ({percentage}%)
+                </span>
+              </div>
+            );
+          })}
+          <div className="flex items-center gap-2 text-xs text-primary font-medium border-t border-surface pt-2 mt-2">
+            <span>Total: {total}</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 });
