@@ -7,9 +7,14 @@ from sqlalchemy.orm import Session
 
 from app.repositories.dashboard_repository import DashboardRepository, _TYPE_COLORS
 from app.schemas.dashboard_schema import (
+    AdvancedKPIsResponse,
     AvailableFiltersResponse,
     BalanceByStoreResponse,
     DashboardSummaryResponse,
+    MaxExpenseDetail,
+    TransactionDetailItem,
+    TransactionDetailResponse,
+    TransactionsByHourResponse,
     TransactionsByTypeResponse,
     UploadsTimelineResponse,
 )
@@ -109,6 +114,121 @@ class DashboardController:
                     labels.append(str(date_val))
         data = [int(row["transaction_count"]) for row in rows]
         return UploadsTimelineResponse(labels=labels, data=data)
+
+    def get_advanced_kpis(
+        self,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+    ) -> AdvancedKPIsResponse:
+        """Returns advanced KPI metrics: cash flow, avg ticket, total transactions and max expense."""
+        result = self._repo.get_advanced_kpis(
+            store_id=store_id,
+            owner_name=owner_name,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        kpi = result["kpi"] or {}
+        expense_row = result["max_expense"]
+
+        max_expense: MaxExpenseDetail | None = None
+        if expense_row:
+            raw_date = expense_row.get("occurred_at")
+            if raw_date is not None:
+                if hasattr(raw_date, "strftime"):
+                    occurred_at_str = raw_date.strftime("%Y-%m-%d")
+                else:
+                    occurred_at_str = str(raw_date)[:10]
+            else:
+                occurred_at_str = None
+            max_expense = MaxExpenseDetail(
+                amount=Decimal(str(expense_row["amount"])),
+                store_name=expense_row.get("store_name"),
+                type_description=expense_row.get("type_description"),
+                occurred_at=occurred_at_str,
+            )
+
+        return AdvancedKPIsResponse(
+            cash_flow=Decimal(str(kpi.get("cash_flow", "0"))),
+            avg_ticket=Decimal(str(kpi.get("avg_ticket", "0"))),
+            total_transactions=int(kpi.get("total_transactions", 0)),
+            max_expense=max_expense,
+        )
+
+    def get_transactions_by_hour(
+        self,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+    ) -> TransactionsByHourResponse:
+        """Returns transaction counts for each of the 24 hours, filling missing hours with 0."""
+        rows = self._repo.get_transactions_by_hour(
+            store_id=store_id,
+            owner_name=owner_name,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        hour_map = {int(row["hour"]): int(row["transaction_count"]) for row in rows}
+        labels = [f"{h:02d}:00" for h in range(24)]
+        data = [hour_map.get(h, 0) for h in range(24)]
+        return TransactionsByHourResponse(labels=labels, data=data)
+
+    def get_transactions_detail(
+        self,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> TransactionDetailResponse:
+        """Returns a paginated list of transaction detail rows."""
+        result = self._repo.get_transactions_detail(
+            store_id=store_id,
+            owner_name=owner_name,
+            date_from=date_from,
+            date_to=date_to,
+            page=page,
+            page_size=page_size,
+        )
+        items: list[TransactionDetailItem] = []
+        for row in result["rows"]:
+            raw_date = row.get("occurred_at")
+            if raw_date is not None:
+                if hasattr(raw_date, "strftime"):
+                    occurred_at_str = raw_date.strftime("%Y-%m-%d")
+                else:
+                    occurred_at_str = str(raw_date)[:10]
+            else:
+                occurred_at_str = ""
+
+            raw_time = row.get("occurred_time")
+            if raw_time is not None:
+                if hasattr(raw_time, "strftime"):
+                    occurred_time_str = raw_time.strftime("%H:%M:%S")
+                else:
+                    occurred_time_str = str(raw_time)[:8]
+            else:
+                occurred_time_str = ""
+
+            items.append(
+                TransactionDetailItem(
+                    id=str(row["id"]),
+                    occurred_at=occurred_at_str,
+                    occurred_time=occurred_time_str,
+                    type_description=str(row["type_description"]),
+                    nature=str(row["nature"]),
+                    sign=str(row["sign"]),
+                    amount=Decimal(str(row["amount"])),
+                    card=row.get("card"),
+                    store_name=str(row["store_name"]),
+                    owner_name=str(row["owner_name"]),
+                    cpf=row.get("cpf"),
+                )
+            )
+        return TransactionDetailResponse(count=result["count"], results=items)
 
     def get_available_filters(self) -> AvailableFiltersResponse:
         """Returns stores, owner names and date range for filter dropdowns."""
