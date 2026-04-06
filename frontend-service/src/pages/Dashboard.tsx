@@ -18,6 +18,26 @@ import {
   type ChartData,
 } from '../services/dashboardService';
 
+const MONTHS = [
+  { value: null, label: 'Todos' },
+  { value: 1, label: 'Janeiro' },
+  { value: 2, label: 'Fevereiro' },
+  { value: 3, label: 'Março' },
+  { value: 4, label: 'Abril' },
+  { value: 5, label: 'Maio' },
+  { value: 6, label: 'Junho' },
+  { value: 7, label: 'Julho' },
+  { value: 8, label: 'Agosto' },
+  { value: 9, label: 'Setembro' },
+  { value: 10, label: 'Outubro' },
+  { value: 11, label: 'Novembro' },
+  { value: 12, label: 'Dezembro' },
+] as const;
+
+const CURRENT_YEAR = new Date().getFullYear();
+const START_YEAR = 2019;
+const YEARS = Array.from({ length: CURRENT_YEAR - START_YEAR + 1 }, (_, i) => START_YEAR + i);
+
 function formatCurrency(value: string): string {
   const num = parseFloat(value);
   if (isNaN(num)) return value;
@@ -38,18 +58,23 @@ const Dashboard: FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [year, setYear] = useState<number>(START_YEAR);
+  const [month, setMonth] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
+      setLoading(true);
+      setError(null);
       try {
+        const params = { year, month: month ?? undefined };
         const [summary, balanceByStore, transactionsByType, transactionsTimeline] =
           await Promise.all([
-            dashboardService.getSummary(),
-            dashboardService.getBalanceByStore(),
-            dashboardService.getTransactionsByType(),
-            dashboardService.getTransactionsTimeline(),
+            dashboardService.getSummary(params),
+            dashboardService.getBalanceByStore(params),
+            dashboardService.getTransactionsByType(params),
+            dashboardService.getTransactionsTimeline(params),
           ]);
 
         if (!cancelled) {
@@ -71,7 +96,7 @@ const Dashboard: FC = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [year, month]);
 
   const balanceVariant = (value: string): 'success' | 'error' => {
     return parseFloat(value) >= 0 ? 'success' : 'error';
@@ -84,6 +109,33 @@ const Dashboard: FC = () => {
           title="Dashboard"
           subtitle="Visão geral das transações CNAB importadas."
         />
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-muted text-sm">Ano:</span>
+            <select
+              className="filter-input rounded-lg px-3 py-1.5 text-sm [color-scheme:dark]"
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+            >
+              {YEARS.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted text-sm">Mês:</span>
+            <select
+              className="filter-input rounded-lg px-3 py-1.5 text-sm [color-scheme:dark]"
+              value={month ?? ''}
+              onChange={(e) => setMonth(e.target.value === '' ? null : Number(e.target.value))}
+            >
+              {MONTHS.map((m) => (
+                <option key={m.value ?? 'all'} value={m.value ?? ''}>{m.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         {error && (
           <div className="alert-error rounded-xl p-4 text-sm">{error}</div>
