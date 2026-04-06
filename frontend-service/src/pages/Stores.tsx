@@ -10,6 +10,7 @@ import {
 import Layout from '../components/Layout';
 import PageTitle from '../components/PageTitle';
 import DataTable from '../components/DataTable';
+import DateInput from '../components/DateInput';
 import FilterChip from '../components/FilterChip';
 import { cnabService } from '../services/cnabService';
 import type { StoreResponse, TransactionResponse, TransactionTypeResponse } from '../types/cnab';
@@ -262,9 +263,21 @@ const Stores: FC = () => {
     ) => {
       try {
         setTransactionsLoading(true);
+
+        // Resolve type UUIDs to codes as CSV
+        const typeCodes = types
+          .map((id) => transactionTypes.find((tt) => tt.id === id)?.code)
+          .filter((c): c is number => c !== undefined);
+
+        // Nature: if only one selected, send it; if both or none, send nothing
+        let natureParam: string | undefined;
+        if (natures.length === 1) {
+          natureParam = natures[0];
+        }
+
         const data = await cnabService.getStoreTransactions(storeId, {
-          type: types.length > 0 ? types.join(',') : undefined,
-          nature: natures.length > 0 ? natures.join(',') : undefined,
+          type_codes: typeCodes.length > 0 ? typeCodes.join(',') : undefined,
+          nature: natureParam,
           date_from: from || undefined,
           date_to: to || undefined,
         });
@@ -275,7 +288,7 @@ const Stores: FC = () => {
         setTransactionsLoading(false);
       }
     },
-    [],
+    [transactionTypes],
   );
 
   useEffect(() => {
@@ -350,37 +363,49 @@ const Stores: FC = () => {
         />
 
         {/* Store list filters */}
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          <div className="relative flex-1 min-w-0">
-            <FontAwesomeIcon
-              icon={faMagnifyingGlass}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs pointer-events-none"
-              aria-hidden="true"
-            />
-            <input
-              type="text"
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              placeholder="Nome da loja..."
-              className="filter-input w-full rounded-lg pl-8 pr-3 py-2 text-sm"
-              aria-label="Filtrar por nome da loja"
-            />
+        <div className="surface-card p-4 flex flex-wrap gap-4 items-end">
+          <div>
+            <label className="text-muted text-xs block mb-1" htmlFor="store-name-input">
+              Nome da loja
+            </label>
+            <div className="relative">
+              <FontAwesomeIcon
+                icon={faMagnifyingGlass}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs pointer-events-none"
+                aria-hidden="true"
+              />
+              <input
+                id="store-name-input"
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="Nome da loja..."
+                className="filter-input rounded-lg pl-8 pr-3 py-2 text-sm"
+                aria-label="Filtrar por nome da loja"
+              />
+            </div>
           </div>
 
-          <div className="relative flex-1 min-w-0">
-            <FontAwesomeIcon
-              icon={faMagnifyingGlass}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs pointer-events-none"
-              aria-hidden="true"
-            />
-            <input
-              type="text"
-              value={ownerInput}
-              onChange={(e) => setOwnerInput(e.target.value)}
-              placeholder="Nome do dono..."
-              className="filter-input w-full rounded-lg pl-8 pr-3 py-2 text-sm"
-              aria-label="Filtrar por nome do dono"
-            />
+          <div>
+            <label className="text-muted text-xs block mb-1" htmlFor="store-owner-input">
+              Nome do dono
+            </label>
+            <div className="relative">
+              <FontAwesomeIcon
+                icon={faMagnifyingGlass}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs pointer-events-none"
+                aria-hidden="true"
+              />
+              <input
+                id="store-owner-input"
+                type="text"
+                value={ownerInput}
+                onChange={(e) => setOwnerInput(e.target.value)}
+                placeholder="Nome do dono..."
+                className="filter-input rounded-lg pl-8 pr-3 py-2 text-sm"
+                aria-label="Filtrar por nome do dono"
+              />
+            </div>
           </div>
 
           <button
@@ -430,7 +455,7 @@ const Stores: FC = () => {
             </div>
 
             {/* Transaction filters */}
-            <div className="space-y-3">
+            <div className="surface-card p-4 space-y-3">
               {/* Type chips */}
               {typeChips.length > 0 && (
                 <div className="flex flex-wrap gap-2 items-center">
@@ -474,38 +499,8 @@ const Stores: FC = () => {
 
               {/* Date range */}
               <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex items-center gap-2">
-                  <label
-                    htmlFor="date-from"
-                    className="text-muted text-xs shrink-0"
-                  >
-                    Data início
-                  </label>
-                  <input
-                    id="date-from"
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="filter-input rounded-lg px-3 py-1.5 text-xs"
-                    aria-label="Data de início"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label
-                    htmlFor="date-to"
-                    className="text-muted text-xs shrink-0"
-                  >
-                    Data fim
-                  </label>
-                  <input
-                    id="date-to"
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="filter-input rounded-lg px-3 py-1.5 text-xs"
-                    aria-label="Data de fim"
-                  />
-                </div>
+                <DateInput value={dateFrom} onChange={setDateFrom} label="Data início" />
+                <DateInput value={dateTo} onChange={setDateTo} label="Data fim" />
               </div>
             </div>
 

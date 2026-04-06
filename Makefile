@@ -2,7 +2,7 @@
 # CNAB Parser - Makefile
 # ============================================
 
-.PHONY: help up down build restart logs migrate test lint shell-user shell-cnab shell-upload logs-worker
+.PHONY: help up down build restart logs migrate test lint shell-user shell-cnab shell-upload shell-dashboard logs-worker
 
 # Colors
 GREEN  := \033[0;32m
@@ -32,10 +32,11 @@ up: ## Start the full stack (build + containers)
 	@echo "$(CYAN)Starting CNAB Parser stack...$(NC)"
 	$(COMPOSE) up --build -d
 	@echo "$(GREEN)Stack is up!$(NC)"
-	@echo "  Frontend:       http://localhost:7000"
-	@echo "  User Service:   http://localhost:7001"
-	@echo "  CNAB Service:   http://localhost:7002"
-	@echo "  Upload Service: http://localhost:7003"
+	@echo "  Frontend:         http://localhost:7000"
+	@echo "  User Service:     http://localhost:7001"
+	@echo "  CNAB Service:     http://localhost:7002"
+	@echo "  Upload Service:   http://localhost:7003"
+	@echo "  Dashboard Service: http://localhost:7004"
 
 down: ## Stop all containers
 	@echo "$(YELLOW)Stopping containers...$(NC)"
@@ -61,6 +62,9 @@ logs-cnab: ## Show cnab-service logs
 
 logs-upload: ## Show upload-service logs
 	$(COMPOSE) logs -f upload-service
+
+logs-dashboard: ## Show cnab-dashboard logs
+	$(COMPOSE) logs -f cnab-dashboard
 
 logs-frontend: ## Show frontend logs
 	$(COMPOSE) logs -f frontend
@@ -102,7 +106,7 @@ createsuperuser: ## Create superuser on user-service
 # Tests
 # ============================================
 
-test: test-user test-cnab test-upload ## Run all tests
+test: test-user test-cnab test-upload test-dashboard ## Run all tests
 
 test-user: ## Run user-service tests
 	@echo "$(CYAN)Running user-service tests...$(NC)"
@@ -119,6 +123,11 @@ test-upload: ## Run upload-service tests
 	$(COMPOSE) exec upload-service /entrypoint.sh test
 	@echo "$(GREEN)Upload-service tests completed.$(NC)"
 
+test-dashboard: ## Run cnab-dashboard tests
+	@echo "$(CYAN)Running cnab-dashboard tests...$(NC)"
+	$(COMPOSE) exec cnab-dashboard /entrypoint.sh test
+	@echo "$(GREEN)Dashboard tests completed.$(NC)"
+
 # ============================================
 # Code Quality
 # ============================================
@@ -130,6 +139,8 @@ lint: ## Run ruff check + format on all services
 	cd cnab-service && ruff check . --fix && ruff format .
 	@echo "$(CYAN)Linting upload-service...$(NC)"
 	cd upload-service && ruff check . --fix && ruff format .
+	@echo "$(CYAN)Linting cnab-dashboard...$(NC)"
+	cd cnab-dashboard && ruff check . --fix && ruff format .
 	@echo "$(CYAN)Linting cnab-shared...$(NC)"
 	cd cnab-shared && ruff check . --fix && ruff format .
 	@echo "$(GREEN)Lint completed.$(NC)"
@@ -147,6 +158,9 @@ shell-cnab: ## Open shell on cnab-service
 shell-upload: ## Open shell on upload-service
 	$(COMPOSE) exec upload-service bash
 
+shell-dashboard: ## Open shell on cnab-dashboard
+	$(COMPOSE) exec cnab-dashboard bash
+
 shell-db: ## Open psql on PostgreSQL
 	$(COMPOSE) exec db psql -U cnab -d cnab_db
 
@@ -156,12 +170,13 @@ shell-db: ## Open psql on PostgreSQL
 
 health: ## Check health of all services
 	@echo "$(CYAN)Checking service health...$(NC)"
-	@echo -n "  db:             " && ($(COMPOSE) exec db pg_isready -U cnab > /dev/null 2>&1 && echo "$(GREEN)OK$(NC)" || echo "$(RED)FAILED$(NC)")
-	@echo -n "  redis:          " && ($(COMPOSE) exec redis redis-cli ping > /dev/null 2>&1 && echo "$(GREEN)OK$(NC)" || echo "$(RED)FAILED$(NC)")
-	@echo -n "  user-service:   " && (curl -sf http://localhost:7001/health > /dev/null 2>&1 && echo "$(GREEN)OK$(NC)" || echo "$(RED)FAILED$(NC)")
-	@echo -n "  cnab-service:   " && (curl -sf http://localhost:7002/health > /dev/null 2>&1 && echo "$(GREEN)OK$(NC)" || echo "$(RED)FAILED$(NC)")
-	@echo -n "  upload-service: " && (curl -sf http://localhost:7003/health > /dev/null 2>&1 && echo "$(GREEN)OK$(NC)" || echo "$(RED)FAILED$(NC)")
-	@echo -n "  frontend:       " && (curl -sf http://localhost:7000/health > /dev/null 2>&1 && echo "$(GREEN)OK$(NC)" || echo "$(RED)FAILED$(NC)")
+	@echo -n "  db:               " && ($(COMPOSE) exec db pg_isready -U cnab > /dev/null 2>&1 && echo "$(GREEN)OK$(NC)" || echo "$(RED)FAILED$(NC)")
+	@echo -n "  redis:            " && ($(COMPOSE) exec redis redis-cli ping > /dev/null 2>&1 && echo "$(GREEN)OK$(NC)" || echo "$(RED)FAILED$(NC)")
+	@echo -n "  user-service:     " && (curl -sf http://localhost:7001/health > /dev/null 2>&1 && echo "$(GREEN)OK$(NC)" || echo "$(RED)FAILED$(NC)")
+	@echo -n "  cnab-service:     " && (curl -sf http://localhost:7002/health > /dev/null 2>&1 && echo "$(GREEN)OK$(NC)" || echo "$(RED)FAILED$(NC)")
+	@echo -n "  upload-service:   " && (curl -sf http://localhost:7003/health > /dev/null 2>&1 && echo "$(GREEN)OK$(NC)" || echo "$(RED)FAILED$(NC)")
+	@echo -n "  cnab-dashboard:   " && (curl -sf http://localhost:7004/health > /dev/null 2>&1 && echo "$(GREEN)OK$(NC)" || echo "$(RED)FAILED$(NC)")
+	@echo -n "  frontend:         " && (curl -sf http://localhost:7000/health > /dev/null 2>&1 && echo "$(GREEN)OK$(NC)" || echo "$(RED)FAILED$(NC)")
 
 # ============================================
 # Cleanup

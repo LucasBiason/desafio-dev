@@ -6,6 +6,7 @@ interface StatCardProps {
   title: string;
   value: string | number;
   subtitle?: string;
+  tooltip?: string;
   icon: IconDefinition;
   variant?: 'default' | 'success' | 'error' | 'warning';
 }
@@ -46,13 +47,14 @@ const StatCard: FC<StatCardProps> = memo(({
   title,
   value,
   subtitle,
+  tooltip,
   icon,
   variant = 'default',
 }) => {
   const config = VARIANT_CONFIG[variant];
 
   return (
-    <div className="surface-card relative overflow-hidden p-4 hover:border-hover transition-all group">
+    <div className="surface-card relative overflow-hidden p-4 hover:border-hover transition-all group" title={tooltip}>
       {/* Corner gradient */}
       <div className={`absolute top-0 right-0 w-20 h-20 rounded-bl-full opacity-20 ${config.cornerGradient}`} />
 

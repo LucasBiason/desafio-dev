@@ -147,6 +147,34 @@ services:
       - ./upload-service/app:/app/app
       - upload_data:/app/uploads
 
+  cnab-dashboard:
+    build:
+      context: .
+      dockerfile: cnab-dashboard/Dockerfile
+      target: test
+    container_name: desafio-dev-cnab-dashboard
+    command: ["runserver"]
+    ports:
+      - "${DASHBOARD_SERVICE_PORT:-7004}:8004"
+    env_file:
+      - configs/.env
+    environment:
+      - PORT=8004
+      - DATABASE_URL=${CNAB_DATABASE_URL:-postgresql://cnab:cnab123@db:5432/cnab_data}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - ./cnab-dashboard/app:/app/app
+
   # ============================================
   # Frontend
   # ============================================
@@ -162,6 +190,8 @@ services:
       user-service:
         condition: service_healthy
       cnab-service:
+        condition: service_healthy
+      cnab-dashboard:
         condition: service_healthy
       upload-service:
         condition: service_healthy
