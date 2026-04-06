@@ -40,44 +40,64 @@ class DashboardRepository:
         return [dict(row._mapping) for row in results]
 
     @staticmethod
-    def _build_join_filter(year: int | None, month: int | None) -> tuple[str, dict]:
-        """Builds extra JOIN conditions and params for filtering transactions by date.
+    def _build_filters(
+        store_id: str | None,
+        owner_name: str | None,
+        date_from: str | None,
+        date_to: str | None,
+        table_prefix: str = "t",
+        store_alias: str = "s",
+    ) -> tuple[list[str], dict]:
+        """Builds WHERE clause conditions and bind params for the given filters.
 
-        Returns an AND-prefixed clause string (suitable for appending to a JOIN ON clause)
-        and the corresponding bind params dict.
+        Returns a list of condition strings and the corresponding params dict.
+        Caller is responsible for joining conditions with AND and prefixing with WHERE.
         """
         clauses: list[str] = []
         params: dict = {}
-        if year is not None:
-            clauses.append("EXTRACT(YEAR FROM t.occurred_at) = :year")
-            params["year"] = year
-        if year is not None and month is not None:
-            clauses.append("EXTRACT(MONTH FROM t.occurred_at) = :month")
-            params["month"] = month
-        join_filter = (" AND " + " AND ".join(clauses)) if clauses else ""
-        return join_filter, params
+
+        if store_id is not None:
+            clauses.append(f"{store_alias}.id = CAST(:store_id AS UUID)")
+            params["store_id"] = store_id
+
+        if owner_name is not None:
+            clauses.append(f"{store_alias}.owner_name ILIKE :owner_pattern")
+            params["owner_pattern"] = f"%{owner_name}%"
+
+        if date_from is not None:
+            clauses.append(f"{table_prefix}.occurred_at >= :date_from")
+            params["date_from"] = date_from
+
+        if date_to is not None:
+            clauses.append(f"{table_prefix}.occurred_at <= :date_to")
+            params["date_to"] = date_to
+
+        return clauses, params
 
     @staticmethod
-    def _build_where_filter(year: int | None, month: int | None) -> tuple[str, dict]:
-        """Builds a WHERE clause and params for filtering transactions by date."""
-        clauses: list[str] = []
-        params: dict = {}
-        if year is not None:
-            clauses.append("EXTRACT(YEAR FROM t.occurred_at) = :year")
-            params["year"] = year
-        if year is not None and month is not None:
-            clauses.append("EXTRACT(MONTH FROM t.occurred_at) = :month")
-            params["month"] = month
-        where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
-        return where, params
+    def _join_conditions(clauses: list[str], prefix: str = " AND ") -> str:
+        """Returns a joined condition string with the given prefix, or empty string."""
+        if not clauses:
+            return ""
+        return prefix + (" AND ".join(clauses))
+
+    @staticmethod
+    def _where_clause(clauses: list[str]) -> str:
+        """Returns a WHERE clause string from conditions, or empty string."""
+        if not clauses:
+            return ""
+        return " WHERE " + " AND ".join(clauses)
 
     def get_summary(
         self,
-        year: int | None = None,
-        month: int | None = None,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
     ) -> dict[str, Any]:
         """Returns overall counts and financial totals across all stores."""
-        join_filter, params = self._build_join_filter(year, month)
+        clauses, params = self._build_filters(store_id, owner_name, date_from, date_to)
+        join_filter = self._join_conditions(clauses)
         sql = f"""
             SELECT
                 COUNT(DISTINCT CASE WHEN t.id IS NOT NULL THEN s.id END) AS total_stores,
@@ -105,11 +125,14 @@ class DashboardRepository:
 
     def get_balance_by_store(
         self,
-        year: int | None = None,
-        month: int | None = None,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
     ) -> list[dict[str, Any]]:
         """Returns store names and their computed balance, ordered by store name."""
-        join_filter, params = self._build_join_filter(year, month)
+        clauses, params = self._build_filters(store_id, owner_name, date_from, date_to)
+        join_filter = self._join_conditions(clauses)
         sql = f"""
             SELECT
                 s.name AS store_name,
@@ -125,17 +148,21 @@ class DashboardRepository:
 
     def get_transactions_by_type(
         self,
-        year: int | None = None,
-        month: int | None = None,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
     ) -> list[dict[str, Any]]:
         """Returns transaction count per type along with type description, ordered by code."""
-        join_filter, params = self._build_join_filter(year, month)
+        clauses, params = self._build_filters(store_id, owner_name, date_from, date_to)
+        join_filter = self._join_conditions(clauses)
         sql = f"""
             SELECT
                 tt.description AS type_description,
                 COUNT(t.id) AS transaction_count
             FROM cnab_transaction_type tt
             LEFT JOIN cnab_transaction t ON t.transaction_type_id = tt.id{join_filter}
+            LEFT JOIN cnab_store s ON s.id = t.store_id
             GROUP BY tt.id, tt.code, tt.description
             ORDER BY tt.code
         """
@@ -143,17 +170,86 @@ class DashboardRepository:
 
     def get_transactions_timeline(
         self,
-        year: int | None = None,
-        month: int | None = None,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
     ) -> list[dict[str, Any]]:
         """Returns transaction count grouped by occurred_at date, ordered chronologically."""
-        where, params = self._build_where_filter(year, month)
+        t_clauses, t_params = self._build_filters(store_id, owner_name, date_from, date_to)
+
+        if store_id is not None or owner_name is not None:
+            # Need to join cnab_store when filtering by store fields
+            store_join = " JOIN cnab_store s ON s.id = t.store_id"
+        else:
+            store_join = ""
+
+        # Rebuild clauses without store alias for timeline (no store join by default)
+        # When store_join is present, store alias 's' is available; otherwise skip store clauses
+        if not store_join:
+            # Only date filters — no store alias needed
+            clauses: list[str] = []
+            params: dict = {}
+            if date_from is not None:
+                clauses.append("t.occurred_at >= :date_from")
+                params["date_from"] = date_from
+            if date_to is not None:
+                clauses.append("t.occurred_at <= :date_to")
+                params["date_to"] = date_to
+        else:
+            clauses = t_clauses
+            params = t_params
+
+        where = self._where_clause(clauses)
         sql = f"""
             SELECT
                 t.occurred_at AS transaction_date,
                 COUNT(t.id) AS transaction_count
-            FROM cnab_transaction t{where}
+            FROM cnab_transaction t{store_join}{where}
             GROUP BY t.occurred_at
             ORDER BY t.occurred_at
         """
         return self._execute_list(sql, params)
+
+    def get_available_filters(self) -> dict[str, Any]:
+        """Returns all stores, distinct owner names, and the overall date range."""
+        stores_sql = """
+            SELECT
+                CAST(id AS TEXT) AS id,
+                name,
+                owner_name
+            FROM cnab_store
+            ORDER BY name
+        """
+        owners_sql = """
+            SELECT DISTINCT owner_name
+            FROM cnab_store
+            ORDER BY owner_name
+        """
+        date_range_sql = """
+            SELECT
+                MIN(occurred_at) AS min_date,
+                MAX(occurred_at) AS max_date
+            FROM cnab_transaction
+        """
+        stores = self._execute_list(stores_sql)
+        owner_rows = self._execute_list(owners_sql)
+        date_range_row = self._execute_one(date_range_sql)
+
+        owners = [row["owner_name"] for row in owner_rows]
+
+        min_date: str | None = None
+        max_date: str | None = None
+        if date_range_row:
+            raw_min = date_range_row.get("min_date")
+            raw_max = date_range_row.get("max_date")
+            if raw_min is not None:
+                min_date = raw_min.strftime("%Y-%m-%d") if hasattr(raw_min, "strftime") else str(raw_min)[:10]
+            if raw_max is not None:
+                max_date = raw_max.strftime("%Y-%m-%d") if hasattr(raw_max, "strftime") else str(raw_max)[:10]
+
+        return {
+            "stores": stores,
+            "owners": owners,
+            "date_range": {"min_date": min_date, "max_date": max_date},
+        }
