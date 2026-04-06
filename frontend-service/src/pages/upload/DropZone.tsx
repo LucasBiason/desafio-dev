@@ -8,15 +8,10 @@ import {
   faCircleXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { uploadService } from '../../services/uploadService';
+import { formatBytes } from '../../utils/formatters';
 
 interface DropZoneProps {
   onUploadSuccess: () => void;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 const DropZone: React.FC<DropZoneProps> = memo(({ onUploadSuccess }) => {

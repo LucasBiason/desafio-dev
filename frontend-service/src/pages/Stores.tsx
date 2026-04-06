@@ -15,27 +15,7 @@ import FilterChip from '../components/FilterChip';
 import { cnabService } from '../services/cnabService';
 import type { StoreResponse, TransactionResponse, TransactionTypeResponse } from '../types/cnab';
 import type { Column } from '../components/DataTable';
-
-// ─── Formatters ─────────────────────────────────────────────────────────────
-
-function formatCpf(cpf: string): string {
-  const digits = cpf.replace(/\D/g, '');
-  if (digits.length !== 11) return cpf;
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-}
-
-function formatCurrency(value: string): string {
-  const num = parseFloat(value);
-  if (isNaN(num)) return value;
-  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-
-function formatDate(value: string): string {
-  if (!value) return '';
-  const [year, month, day] = value.split('-');
-  if (!year || !month || !day) return value;
-  return `${day}/${month}/${year}`;
-}
+import { formatCpf, formatCurrency, formatDate } from '../utils/formatters';
 
 // ─── Nature badge ────────────────────────────────────────────────────────────
 

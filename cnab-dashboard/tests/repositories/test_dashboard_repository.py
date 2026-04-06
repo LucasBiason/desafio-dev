@@ -64,9 +64,7 @@ class TestBuildFilters:
 
     def test_all_params_returns_four_clauses(self):
         """_build_filters with all params returns exactly four clauses."""
-        clauses, params = DashboardRepository._build_filters(
-            "store-uuid", "Pedro", "2024-01-01", "2024-12-31"
-        )
+        clauses, params = DashboardRepository._build_filters("store-uuid", "Pedro", "2024-01-01", "2024-12-31")
         assert len(clauses) == 4
         assert "store_id" in params
         assert "owner_pattern" in params
@@ -75,16 +73,12 @@ class TestBuildFilters:
 
     def test_custom_table_prefix_is_applied(self):
         """_build_filters uses the given table_prefix for date conditions."""
-        clauses, _ = DashboardRepository._build_filters(
-            None, None, "2024-01-01", None, table_prefix="tx"
-        )
+        clauses, _ = DashboardRepository._build_filters(None, None, "2024-01-01", None, table_prefix="tx")
         assert any("tx.occurred_at" in c for c in clauses)
 
     def test_custom_store_alias_is_applied(self):
         """_build_filters uses the given store_alias for store conditions."""
-        clauses, _ = DashboardRepository._build_filters(
-            "some-id", None, None, None, store_alias="store"
-        )
+        clauses, _ = DashboardRepository._build_filters("some-id", None, None, None, store_alias="store")
         assert any("store.id = CAST" in c for c in clauses)
 
     def test_store_id_only_returns_one_clause(self):
