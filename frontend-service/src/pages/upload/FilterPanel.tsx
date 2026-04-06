@@ -2,6 +2,7 @@ import { memo } from 'react';
 import type { FC } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMagnifyingGlass, faXmark } from '@fortawesome/free-solid-svg-icons';
+import DateInput from '../../components/DateInput';
 import FilterChip from '../../components/FilterChip';
 import type { UploadStatus } from '../../types/upload';
 
@@ -70,38 +71,28 @@ const FilterPanel: FC<FilterPanelProps> = memo(({
       <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
         Filtros
       </p>
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-muted">
-            <FontAwesomeIcon icon={faMagnifyingGlass} className="text-xs" aria-hidden="true" />
-          </span>
-          <input
-            type="search"
-            placeholder="Nome do arquivo..."
-            value={filenameInput}
-            onChange={(e) => onFilenameChange(e.target.value)}
-            className="w-full filter-input rounded-lg pl-8 pr-3 py-1.5 text-sm placeholder-muted [color-scheme:dark]"
-            aria-label="Buscar por nome do arquivo"
-          />
+      <div className="flex flex-col sm:flex-row gap-3 items-end">
+        <div className="flex-1 max-w-sm">
+          <label className="text-muted text-xs block mb-1">Nome do arquivo</label>
+          <div className="relative">
+            <FontAwesomeIcon
+              icon={faMagnifyingGlass}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs pointer-events-none"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              placeholder="Buscar..."
+              value={filenameInput}
+              onChange={(e) => onFilenameChange(e.target.value)}
+              className="w-full filter-input rounded-lg pl-8 pr-3 py-1.5 text-sm placeholder-muted [color-scheme:dark]"
+              aria-label="Buscar por nome do arquivo"
+            />
+          </div>
         </div>
 
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => onDateFromChange(e.target.value)}
-          className="filter-input rounded-lg text-sm px-3 py-1.5 [color-scheme:dark]"
-          aria-label="Data início"
-          title="Data início"
-        />
-
-        <input
-          type="date"
-          value={dateTo}
-          onChange={(e) => onDateToChange(e.target.value)}
-          className="filter-input rounded-lg text-sm px-3 py-1.5 [color-scheme:dark]"
-          aria-label="Data fim"
-          title="Data fim"
-        />
+        <DateInput value={dateFrom} onChange={onDateFromChange} label="Data início" />
+        <DateInput value={dateTo} onChange={onDateToChange} label="Data fim" />
       </div>
     </div>
   </div>

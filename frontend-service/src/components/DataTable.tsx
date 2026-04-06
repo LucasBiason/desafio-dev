@@ -32,6 +32,9 @@ interface DataTableProps<T> {
   rowKey?: (row: T) => string;
   onRowClick?: (row: T) => void;
   selectedRowKey?: string;
+  totalCount?: number;
+  onPageChange?: (page: number, pageSize: number) => void;
+  onSortChange?: (sortKey: string, sortDir: 'asc' | 'desc') => void;
 }
 
 type SortDir = 'asc' | 'desc';
@@ -97,23 +100,27 @@ function DataTable<T extends Record<string, unknown>>({
   rowKey,
   onRowClick,
   selectedRowKey,
+  totalCount,
+  onPageChange,
+  onSortChange,
 }: DataTableProps<T>) {
+  const isServerSide = totalCount !== undefined && onPageChange !== undefined;
   const [sortKey, setSortKey] = useState<string>(defaultSortKey ?? '');
   const [sortDir, setSortDir] = useState<SortDir>(defaultSortDir);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(pageSizeOptions[1] ?? pageSizeOptions[0] ?? 10);
 
   const sortedData = useMemo(() => {
-    if (!sortKey) return data;
+    if (isServerSide || !sortKey) return data;
     return [...data].sort((a, b) => compareValues(a[sortKey], b[sortKey], sortDir));
-  }, [data, sortKey, sortDir]);
+  }, [data, sortKey, sortDir, isServerSide]);
 
-  const totalFiltered = sortedData.length;
+  const totalFiltered = isServerSide ? totalCount : sortedData.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalFiltered);
-  const pageRows = sortedData.slice(startIndex, endIndex);
+  const pageRows = isServerSide ? data : sortedData.slice(startIndex, endIndex);
 
   const pageNumbers = useMemo(() => {
     const range: number[] = [];
@@ -124,19 +131,35 @@ function DataTable<T extends Record<string, unknown>>({
     return range;
   }, [safePage, totalPages]);
 
+  const goToPage = (page: number, size: number = pageSize) => {
+    setCurrentPage(page);
+    if (isServerSide) {
+      onPageChange(page, size);
+    }
+  };
+
   const handleSortColumn = (key: string) => {
+    let newDir: SortDir = 'asc';
     if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+      newDir = sortDir === 'asc' ? 'desc' : 'asc';
+      setSortDir(newDir);
     } else {
       setSortKey(key);
-      setSortDir('asc');
+      setSortDir(newDir);
     }
     setCurrentPage(1);
+    if (isServerSide && onSortChange) {
+      onSortChange(key, newDir);
+    }
   };
 
   const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPageSize(Number(e.target.value));
+    const newSize = Number(e.target.value);
+    setPageSize(newSize);
     setCurrentPage(1);
+    if (isServerSide) {
+      onPageChange(1, newSize);
+    }
   };
 
   const skeletonColumnCount = columns.length;
@@ -305,7 +328,7 @@ function DataTable<T extends Record<string, unknown>>({
           {totalPages > 1 && (
             <div className="flex items-center gap-1" role="navigation" aria-label="Paginação">
               <button
-                onClick={() => setCurrentPage(1)}
+                onClick={() => goToPage(1)}
                 disabled={safePage === 1}
                 className="w-8 h-8 flex items-center justify-center text-muted hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Primeira página"
@@ -314,7 +337,7 @@ function DataTable<T extends Record<string, unknown>>({
               </button>
 
               <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                onClick={() => goToPage(Math.max(1, safePage - 1))}
                 disabled={safePage === 1}
                 className="w-8 h-8 flex items-center justify-center text-muted hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Página anterior"
@@ -325,7 +348,7 @@ function DataTable<T extends Record<string, unknown>>({
               {pageNumbers.map((num) => (
                 <button
                   key={num}
-                  onClick={() => setCurrentPage(num)}
+                  onClick={() => goToPage(num)}
                   className={[
                     'w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-colors',
                     num === safePage
@@ -340,7 +363,7 @@ function DataTable<T extends Record<string, unknown>>({
               ))}
 
               <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => goToPage(Math.min(totalPages, safePage + 1))}
                 disabled={safePage === totalPages}
                 className="w-8 h-8 flex items-center justify-center text-muted hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Próxima página"
@@ -349,7 +372,7 @@ function DataTable<T extends Record<string, unknown>>({
               </button>
 
               <button
-                onClick={() => setCurrentPage(totalPages)}
+                onClick={() => goToPage(totalPages)}
                 disabled={safePage === totalPages}
                 className="w-8 h-8 flex items-center justify-center text-muted hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Última página"

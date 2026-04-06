@@ -19,12 +19,13 @@ Frontend → upload-service (recebe arquivo, parseia, processa)
 
 ## Como funciona
 
-O upload-service recebe o arquivo do frontend, cria um registro de histórico, parseia o CNAB e chama a API do cnab-service para inserir os dados. A comunicação entre os dois serviços é protegida por **Fernet token** — uma chave simétrica compartilhada via variável de ambiente que gera tokens com expiração automática.
+O upload-service recebe o arquivo do frontend, parseia o CNAB e cria um registro de histórico com status "pending". O upload-worker — um processo separado que usa a mesma imagem do upload-service — faz polling no banco a cada 10 segundos buscando registros pendentes e chama a API do cnab-service para inserir os dados. A comunicação entre os serviços é protegida por **Fernet token** — uma chave simétrica compartilhada via variável de ambiente que gera tokens com expiração automática.
 
 | Serviço | O que faz |
 |---------|-----------|
-| **upload-service** | Recebe arquivo, armazena histórico, parseia CNAB, chama cnab-service |
-| **cnab-service** | Armazena lojas e transações, serve listagens com saldo |
+| **upload-service** | Recebe arquivo, parseia CNAB, cria registro com status "pending" |
+| **upload-worker** | Busca uploads pendentes (polling 10s), chama cnab-service, atualiza status |
+| **cnab-service** | Armazena lojas e transações, serve listagens com saldo e analytics do dashboard |
 
 ## Por que Fernet?
 
@@ -48,10 +49,12 @@ Cada serviço tem seu próprio banco no mesmo PostgreSQL. Assim as migrations de
 1. Upload é I/O pesado e pode demorar. Consulta é leve. Perfis de carga diferentes.
 2. Se o processamento falhar, as consultas continuam funcionando.
 3. Cada serviço pode escalar de forma independente.
-4. A autenticação Fernet garante que só o upload-service insere dados.
+4. A autenticação Fernet garante que só o upload-worker insere dados no cnab-service.
+5. O modelo de worker com polling evita dependências de filas externas (sem Redis, sem Celery) mantendo a simplicidade operacional.
 
 ## Trade-offs
 
 - Mais um serviço para manter e mais um banco de dados
+- O polling a cada 10s introduz latência máxima de 10s entre upload e processamento
 - Comunicação entre serviços adiciona um pouco de latência (mitigada pelo processamento em background)
 - A chave Fernet precisa ser tratada como segredo
