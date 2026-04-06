@@ -8,8 +8,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from authentication.controllers.auth_controller import JWTAuthentication
-from users.models.user import User
 from users.controllers.user import UserController
+from users.models.user import User
 from users.serializers.user import UserSerializer
 
 logger = logging.getLogger(__name__)

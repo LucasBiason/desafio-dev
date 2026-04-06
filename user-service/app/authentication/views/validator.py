@@ -1,7 +1,6 @@
 """API endpoint for token validation."""
 
 import logging
-from typing import Dict
 
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -24,5 +23,5 @@ class Validator(APIView):
 
     @schemas.validate
     def post(self, request) -> Response:
-        logged_user: Dict = JWTAuthentication.validate(request)
+        logged_user: dict = JWTAuthentication.validate(request)
         return Response(logged_user, status=status.HTTP_200_OK)

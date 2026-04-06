@@ -1,6 +1,6 @@
 """Generic base repository with CRUD operations and raw SQL support."""
 
-from typing import Any, Generic, Type, TypeVar
+from typing import Any, Generic, TypeVar
 from uuid import UUID
 
 from sqlalchemy import text
@@ -12,7 +12,7 @@ T = TypeVar("T")
 class BaseRepository(Generic[T]):
     """Generic CRUD repository to be inherited by domain repositories."""
 
-    def __init__(self, db: Session, model_class: Type[T]) -> None:
+    def __init__(self, db: Session, model_class: type[T]) -> None:
         self.db = db
         self.model_class = model_class
 

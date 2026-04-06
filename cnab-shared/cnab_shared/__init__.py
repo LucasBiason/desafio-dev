@@ -1,25 +1,28 @@
 """Shared package for CNAB Parser FastAPI microservices."""
 
-from cnab_shared.setup_api import CNABFastAPI
-from cnab_shared.database.database import get_db, Base, get_engine
-from cnab_shared.models.base_model import BaseModel
-from cnab_shared.repository.base_repository import BaseRepository
+from cnab_shared.database.database import Base, get_db, get_engine
+from cnab_shared.dependencies.require_jwt import require_jwt
+from cnab_shared.dependencies.require_service_token import require_service_token
 from cnab_shared.exceptions.exceptions import (
     AuthenticationError,
-    TokenExpiredError,
-    ValidationError,
     DatabaseError,
-    PermissionDeniedError,
-    ResourceNotFoundError,
     DuplicateResourceError,
     MissingAuthorizationHeaderError,
+    PermissionDeniedError,
+    ResourceNotFoundError,
+    TokenExpiredError,
+    ValidationError,
 )
+from cnab_shared.logging.config import configure_logging, get_logger
 from cnab_shared.middleware.auth_middleware import AuthMiddleware
 from cnab_shared.middleware.exceptions_middleware import CatchExceptionsMiddleware
 from cnab_shared.middleware.logging_middleware import LoggingMiddleware
+from cnab_shared.models.base_model import BaseModel
+from cnab_shared.repository.base_repository import BaseRepository
 from cnab_shared.routers.health_router import create_health_router
+from cnab_shared.services.fernet_validator import FernetValidator
 from cnab_shared.services.user_service import UserService
-from cnab_shared.logging.config import configure_logging, get_logger
+from cnab_shared.setup_api import CNABFastAPI
 
 __all__ = [
     "CNABFastAPI",
@@ -41,6 +44,9 @@ __all__ = [
     "LoggingMiddleware",
     "create_health_router",
     "UserService",
+    "FernetValidator",
+    "require_jwt",
+    "require_service_token",
     "configure_logging",
     "get_logger",
 ]

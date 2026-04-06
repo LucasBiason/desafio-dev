@@ -92,27 +92,30 @@ class TestTransactionRepositoryListByStore:
         assert len(rows) == 1
         assert rows[0]["card"] == "1234****5678"
 
-    def test_type_code_filter_in_params(self, db):
-        """list_by_store passes type_code to SQL params when provided."""
+    def test_type_codes_filter_in_sql(self, db):
+        """list_by_store adds IN clause for type_codes when provided."""
         repo = TransactionRepository(db=db)
         with (
             patch.object(repo, "query_one", return_value={"total": 0}),
             patch.object(repo, "query_list", return_value=[]) as mock_list,
         ):
-            repo.list_by_store(store_id=str(uuid.uuid4()), type_code=3)
+            repo.list_by_store(store_id=str(uuid.uuid4()), type_codes=[1, 3])
+            sql_query = mock_list.call_args[0][0]
+            assert "tt.code IN" in sql_query
             call_params = mock_list.call_args[0][1]
-            assert call_params.get("type_code") == 3
+            assert call_params.get("tc_0") == 1
+            assert call_params.get("tc_1") == 3
 
-    def test_nature_filter_in_params(self, db):
-        """list_by_store passes nature to SQL params when provided."""
+    def test_nature_filter_adds_sign_clause(self, db):
+        """list_by_store adds tt.sign clause when nature is provided."""
         repo = TransactionRepository(db=db)
         with (
             patch.object(repo, "query_one", return_value={"total": 0}),
             patch.object(repo, "query_list", return_value=[]) as mock_list,
         ):
             repo.list_by_store(store_id=str(uuid.uuid4()), nature="Entrada")
-            call_params = mock_list.call_args[0][1]
-            assert call_params.get("nature") == "Entrada"
+            sql_query = mock_list.call_args[0][0]
+            assert "tt.sign = '+'" in sql_query
 
     def test_date_filters_in_params(self, db):
         """list_by_store includes date_from and date_to in SQL params."""

@@ -3,13 +3,13 @@
 import os
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from cnab_shared.database.database import Base
+from alembic import context
 
 # Import all models so Alembic detects them
 from app.models import UploadHistory  # noqa: F401
+from cnab_shared.database.database import Base
 
 config = context.config
 

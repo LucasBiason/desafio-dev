@@ -1,11 +1,11 @@
 """Controllers for cnab-service business logic."""
 
-from .dashboard_controller import DashboardController
-from .internal_controller import InternalController
 from .store_controller import StoreController
+from .transaction_controller import TransactionController
+from .upload_controller import UploadController
 
 __all__ = [
     "StoreController",
-    "InternalController",
-    "DashboardController",
+    "TransactionController",
+    "UploadController",
 ]

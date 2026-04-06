@@ -1,6 +1,5 @@
 """Tests for FileStorage."""
 
-import pytest
 
 from app.services.file_storage import FileStorage
 

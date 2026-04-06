@@ -12,5 +12,6 @@ setup(
         "psycopg2-binary>=2.9.9",
         "pydantic>=2.0.0",
         "httpx>=0.24.0",
+        "cryptography>=42.0.0",
     ],
 )

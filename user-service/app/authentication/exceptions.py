@@ -20,9 +20,7 @@ STATUS_FORBIDDEN = 403
 class BaseAPIException(APIException):
     """Base exception that logs the error and sets the response detail and status code."""
 
-    def __init__(
-        self, detail: str, status_code: int = STATUS_FORBIDDEN, **kwargs
-    ) -> None:
+    def __init__(self, detail: str, status_code: int = STATUS_FORBIDDEN, **kwargs) -> None:
         self.detail = detail.format(**kwargs) if kwargs else detail
         self.status_code = status_code
         logger.error("%s", self.detail)

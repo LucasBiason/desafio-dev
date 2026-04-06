@@ -57,7 +57,7 @@ const BarChartCard: FC<BarChartCardProps> = memo(({ title, labels, data }) => {
     value: data[index] ?? 0,
   }));
 
-  const dynamicHeight = Math.max(300, chartData.length * 50);
+  const dynamicHeight = Math.min(400, Math.max(280, chartData.length * 38));
 
   return (
     <div className="surface-card p-5 flex flex-col gap-4">
@@ -80,7 +80,7 @@ const BarChartCard: FC<BarChartCardProps> = memo(({ title, labels, data }) => {
                 new Intl.NumberFormat('pt-BR', { notation: 'compact', currency: 'BRL' }).format(v)
               }
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--chart-cursor)' }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--chart-cursor)' }} isAnimationActive={false} />
             <Bar dataKey="value" radius={[4, 4, 0, 0]} minPointSize={40}>
               {chartData.map((entry, index) => (
                 <Cell

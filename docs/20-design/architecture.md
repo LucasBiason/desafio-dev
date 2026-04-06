@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-Arquitetura de microsserviços com três backends (user-service em Django, upload-service e cnab-service em FastAPI), biblioteca compartilhada (cnab-shared), SPA React como frontend e Nginx como proxy reverso. Orquestrado via Docker Compose.
+Arquitetura de microsserviços com três backends (user-service em Django, upload-service e cnab-service em FastAPI), um worker de processamento em background (upload-worker), biblioteca compartilhada (cnab-shared), SPA React como frontend e Nginx como proxy reverso. Orquestrado via Docker Compose.
 
 ```mermaid
 flowchart TB
@@ -17,6 +17,7 @@ flowchart TB
   subgraph Services["Microsserviços"]
     US["user-service :7001\n(Django + JWT)"]
     UPS["upload-service :7003\n(FastAPI)"]
+    UPW["upload-worker\n(mesma imagem do upload-service)"]
     CS["cnab-service :7002\n(FastAPI)"]
     SH["cnab-shared\n(biblioteca)"]
   end
@@ -32,6 +33,8 @@ flowchart TB
   FE -->|"/api/upload/*"| UPS
   FE -->|"/api/cnab/*"| CS
   UPS ==>|"Fernet token\n(X-Service-Token)"| CS
+  UPS -.->|"delega processamento\n(polling 10s)"| UPW
+  UPW ==>|"Fernet token\n(X-Service-Token)"| CS
   CS -.->|"valida JWT"| US
   UPS -.->|"valida JWT"| US
   SH -.-> CS
@@ -46,10 +49,12 @@ flowchart TB
 | Serviço | Stack | Porta | Responsabilidade |
 |---------|-------|-------|------------------|
 | user-service | Django 5 + DRF + PyJWT | 7001 | Autenticação JWT e gestão de usuários |
-| upload-service | FastAPI + cnab-shared | 7003 | Upload de arquivos CNAB, parsing, processamento em background |
-| cnab-service | FastAPI + SQLAlchemy + Pydantic V2 | 7002 | Armazenamento e consulta de lojas, transações e saldos |
-| cnab-shared | Python package | — | Biblioteca compartilhada (BaseModel, BaseRepository, middleware, exceptions) |
-| frontend-service | React 18 + TypeScript + Vite + Tailwind | 7000 | Interface web (Nginx como proxy reverso) |
+| upload-service | FastAPI + cnab-shared | 7003 | Upload de arquivos CNAB e parsing |
+| upload-worker | mesma imagem do upload-service | — | Processamento de uploads pendentes (polling a cada 10s) |
+| cnab-service | FastAPI + SQLAlchemy + Pydantic V2 | 7002 | Armazenamento e consulta de lojas e transações |
+| cnab-dashboard | FastAPI + SQL otimizado | 7004 | Dashboard analítico read-only (consulta cnab_data) |
+| cnab-shared | Python package | — | Biblioteca compartilhada (BaseModel, BaseRepository, auth, middleware, exceptions) |
+| frontend-service | React 19 + TypeScript 5.9 + Vite 8 + Tailwind + Recharts + Nginx | 7000 | Interface web (Nginx como proxy reverso), paleta bycoders_ |
 
 ## Comunicação entre Serviços
 
@@ -88,11 +93,15 @@ Cada microsserviço possui seu próprio banco no mesmo PostgreSQL:
 3. upload-service:
    a. Valida JWT do usuário
    b. Armazena o arquivo
-   c. Cria registro em cnab_upload_history (status: "processing")
-   d. Parseia o arquivo CNAB (largura fixa → dados normalizados)
-   e. Chama a API do cnab-service com Fernet token para inserir dados
-   f. Atualiza status para "completed" ou "failed"
-4. cnab-service:
+   c. Parseia o arquivo CNAB (largura fixa → dados normalizados)
+   d. Cria registro em cnab_upload_history (status: "pending")
+   e. Retorna resposta imediata ao frontend
+4. upload-worker (processo separado, polling a cada 10s):
+   a. Busca registros com status "pending"
+   b. Atualiza status para "processing"
+   c. Chama a API do cnab-service com Fernet token para inserir dados
+   d. Atualiza status para "completed" ou "failed"
+5. cnab-service:
    a. Valida Fernet token
    b. Cria/reutiliza lojas
    c. Insere transações
@@ -147,14 +156,17 @@ desafio-dev/
 │   ├── Dockerfile
 │   └── entrypoint.sh
 │
-├── upload-service/                  # Microsserviço de upload (FastAPI)
+├── upload-service/                  # Microsserviço de upload (FastAPI) + worker
 │   ├── app/
 │   │   ├── models/                  # UploadHistory
 │   │   ├── controllers/             # UploadController
 │   │   ├── repositories/            # UploadHistoryRepository
 │   │   ├── services/                # CNABParser, CNABServiceClient (Fernet)
 │   │   ├── routers/                 # Upload endpoints
-│   │   └── schemas/                 # Request/response models
+│   │   ├── schemas/                 # Request/response models
+│   │   ├── tasks/                   # Tarefas executadas pelo worker
+│   │   ├── validators/              # Validação de arquivos CNAB
+│   │   └── worker.py                # Entrypoint do upload-worker (polling loop)
 │   ├── tests/
 │   ├── alembic/                     # Migrations (cnab_uploads)
 │   ├── Dockerfile
@@ -163,10 +175,10 @@ desafio-dev/
 ├── cnab-service/                    # Microsserviço de dados CNAB (FastAPI)
 │   ├── app/
 │   │   ├── models/                  # Store, Transaction, TransactionType
-│   │   ├── controllers/             # StoreController, TransactionController
+│   │   ├── controllers/             # StoreController, TransactionController, DashboardController
 │   │   ├── repositories/            # StoreRepository, TransactionRepository
-│   │   ├── services/                # FernetValidator
-│   │   ├── routers/                 # Store/Transaction endpoints + internal endpoint
+│   │   ├── services/                # FernetValidator, DashboardService
+│   │   ├── routers/                 # Store/Transaction endpoints + internal + dashboard
 │   │   └── schemas/                 # Request/response models
 │   ├── tests/
 │   ├── alembic/                     # Migrations (cnab_data)
@@ -222,8 +234,10 @@ desafio-dev/
 | db | postgres:16-alpine | 5435 | 5432 | — | PostgreSQL (3 bancos) |
 | redis | redis:7-alpine | 6380 | 6379 | — | Cache e sessões |
 | user-service | custom (Django) | 7001 | 8001 | cnab_users | Autenticação e gestão de usuários |
-| upload-service | custom (FastAPI) | 7003 | 8003 | cnab_uploads | Upload e processamento CNAB |
-| cnab-service | custom (FastAPI) | 7002 | 8002 | cnab_data | Armazenamento e consulta de transações |
+| upload-service | custom (FastAPI) | 7003 | 8003 | cnab_uploads | Recebimento e parsing de arquivos CNAB |
+| upload-worker | mesma do upload-service | — | — | cnab_uploads | Processamento em background (polling 10s), lotes de 1000 |
+| cnab-service | custom (FastAPI) | 7002 | 8002 | cnab_data | Armazenamento e consulta de lojas e transações |
+| cnab-dashboard | custom (FastAPI) | 7004 | 8004 | cnab_data (read-only) | Analytics e KPIs do dashboard |
 | frontend | custom (React+Nginx) | 7000 | 3000 | — | Interface web e proxy reverso |
 
 ## Dockerfiles (Multi-stage)

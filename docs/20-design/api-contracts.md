@@ -6,9 +6,10 @@
 |---------|----------|-------|-------------|
 | user-service | `http://localhost:7001` | 7001 | — (endpoints públicos + JWT) |
 | upload-service | `http://localhost:7003` | 7003 | JWT (usuário) |
-| cnab-service | `http://localhost:7002` | 7002 | JWT (consultas) / Fernet (inserção interna) |
+| cnab-service | `http://localhost:7002` | 7002 | JWT (consultas) / Fernet (upload) |
+| cnab-dashboard | `http://localhost:7004` | 7004 | JWT (analytics) |
 
-Via Nginx (frontend): `/api/user/*` → user-service, `/api/upload/*` → upload-service, `/api/cnab/*` → cnab-service.
+Via Nginx (frontend): `/api/user/*` → user-service, `/api/upload/*` → upload-service, `/api/cnab/*` → cnab-service, `/api/dashboard/*` → cnab-dashboard.
 
 ## Autenticação
 
@@ -260,11 +261,11 @@ Detalhe de um upload específico. Requer JWT.
 
 ---
 
-### Endpoint Interno (Fernet)
+### Endpoint de Upload (Fernet)
 
-#### POST /internal/transactions/
+#### POST /transactions/upload/
 
-Recebe dados parseados do upload-service. **Requer Fernet token** no header `X-Service-Token`. Não aceita JWT — somente comunicação entre serviços.
+Recebe dados parseados do upload-service. **Requer Fernet token** no header `X-Service-Token`. Não aceita JWT — somente comunicação entre serviços. Transações duplicadas são ignoradas via content hash (SHA-256).
 
 **Headers:**
 ```
@@ -304,31 +305,23 @@ X-Service-Token: <fernet_encrypted_token>
 
 ---
 
-### Lojas e Transações (consulta pública)
+### Lojas
 
 #### GET /stores/
 
 Lista lojas com saldo totalizado. Requer JWT.
 
-**Paginação:**
 | Parâmetro | Tipo | Default | Descrição |
 |-----------|------|---------|-----------|
 | page | int | 1 | Número da página |
-| page_size | int | 20 | Itens por página (max: 100) |
-
-**Filtros:**
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| name | string | Filtrar por nome da loja (contém) |
-| owner_name | string | Filtrar por nome do dono (contém) |
-| ordering | string | `name`, `-name`, `balance`, `-balance` |
+| page_size | int | 20 | Itens por página |
+| name | string | — | Filtrar por nome da loja (contém) |
+| owner_name | string | — | Filtrar por nome do dono (contém) |
 
 **Response 200:**
 ```json
 {
     "count": 5,
-    "next": null,
-    "previous": null,
     "results": [
         {
             "id": "uuid-...",
@@ -337,47 +330,50 @@ Lista lojas com saldo totalizado. Requer JWT.
             "owner_cpf": "09620676017",
             "balance": "152.32",
             "total_income": "264.00",
-            "total_expense": "-111.68",
+            "total_expense": "111.68",
             "transaction_count": 4
         }
     ]
 }
 ```
 
+#### GET /stores/{store_id}
+
+Retorna uma loja específica com saldo. Requer JWT.
+
+**Response 200:** Mesmo formato de um item da listagem.
+**Response 404:** Loja não encontrada.
+
 ---
 
-#### GET /stores/{store_id}/transactions/
+### Transações
 
-Lista transações de uma loja. Requer JWT.
+#### GET /transactions/
 
-**Paginação:**
+Lista transações filtradas por loja. Requer JWT.
+
 | Parâmetro | Tipo | Default | Descrição |
 |-----------|------|---------|-----------|
+| store_id | string | **obrigatório** | UUID da loja |
 | page | int | 1 | Número da página |
-| page_size | int | 20 | Itens por página (max: 100) |
-
-**Filtros:**
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| type | int | Tipo de transação (1-9) |
-| nature | string | `entrada` ou `saida` |
-| date_from | date | Data início (YYYY-MM-DD) |
-| date_to | date | Data fim (YYYY-MM-DD) |
-| ordering | string | `occurred_at`, `-occurred_at`, `amount`, `-amount` |
+| page_size | int | 20 | Itens por página |
+| type_code | int | — | Tipo de transação (1-9) |
+| nature | string | — | `Entrada` ou `Saida` |
+| date_from | date | — | Data início (YYYY-MM-DD) |
+| date_to | date | — | Data fim (YYYY-MM-DD) |
 
 **Response 200:**
 ```json
 {
     "count": 4,
-    "next": null,
-    "previous": null,
     "results": [
         {
             "id": "uuid-...",
             "transaction_type": {
+                "id": "uuid-...",
                 "code": 3,
                 "description": "Financiamento",
-                "nature": "saída",
+                "nature": "Saida",
                 "sign": "-"
             },
             "amount": "142.00",
@@ -387,12 +383,20 @@ Lista transações de uma loja. Requer JWT.
             "store": {
                 "id": "uuid-...",
                 "name": "BAR DO JOÃO",
-                "owner_name": "JOÃO MACEDO"
+                "owner_name": "JOÃO MACEDO",
+                "owner_cpf": "09620676017"
             }
         }
     ]
 }
 ```
+
+#### GET /transactions/{transaction_id}
+
+Retorna uma transação específica. Requer JWT.
+
+**Response 200:** Mesmo formato de um item da listagem.
+**Response 404:** Transação não encontrada.
 
 ---
 
@@ -412,6 +416,164 @@ Lista os 9 tipos de transação CNAB. Sem paginação (dados fixos). Requer JWT.
     {"code": 7, "description": "Recebimento TED", "nature": "entrada", "sign": "+"},
     {"code": 8, "description": "Recebimento DOC", "nature": "entrada", "sign": "+"},
     {"code": 9, "description": "Aluguel", "nature": "saída", "sign": "-"}
+]
+```
+
+---
+
+---
+
+## CNAB Dashboard Service (porta 7004)
+
+### Health Check
+
+#### GET /health
+
+**Response 200:** `{"status": "healthy", "system_name": "cnab-dashboard", ...}`
+
+---
+
+### Dashboard Analytics
+
+Serviço read-only que consulta o banco `cnab_data` para fornecer estatísticas agregadas.
+
+Todos os endpoints abaixo aceitam os mesmos parâmetros de filtro opcionais (exceto `transactions-detail`, que tem parâmetros adicionais):
+
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| store_id | UUID | Filtrar por UUID da loja |
+| owner_name | string | Filtrar por nome do representante (correspondência parcial) |
+| date_from | date | Data de início (YYYY-MM-DD) |
+| date_to | date | Data de fim (YYYY-MM-DD) |
+
+Todos requerem JWT.
+
+---
+
+#### GET /summary/
+
+Retorna os KPIs da primeira camada do dashboard (O Panorama).
+
+**Response 200:**
+```json
+{
+    "total_balance": "1523.45",
+    "average_ticket": "67.32",
+    "total_transactions": 312,
+    "attention_store": {
+        "name": "LOJA X",
+        "owner_name": "FULANO",
+        "balance": "-450.00"
+    }
+}
+```
+
+---
+
+#### GET /balance-by-store/
+
+Retorna saldo por loja para o gráfico de barras (segunda camada — O Desempenho).
+
+**Response 200:**
+```json
+[
+    {"store_name": "BAR DO JOÃO", "balance": "152.32"},
+    {"store_name": "LOJA X", "balance": "-450.00"}
+]
+```
+
+---
+
+#### GET /transactions-by-type/
+
+Retorna distribuição de volume por tipo de transação para o gráfico donut (segunda camada).
+
+**Response 200:**
+```json
+[
+    {"type_code": 1, "description": "Débito", "nature": "entrada", "total_amount": "890.00", "count": 42},
+    {"type_code": 2, "description": "Boleto", "nature": "saída", "total_amount": "320.00", "count": 15}
+]
+```
+
+---
+
+#### GET /transactions-by-hour/
+
+Retorna densidade de transações por hora do dia para o gráfico de área (terceira camada — A Operação).
+
+**Response 200:**
+```json
+[
+    {"hour": 9, "count": 12, "total_amount": "540.00"},
+    {"hour": 10, "count": 28, "total_amount": "1230.00"}
+]
+```
+
+---
+
+#### GET /transactions-detail/
+
+DataTable da terceira camada com todas as transações do período filtrado. Aceita os filtros comuns (`store_id`, `owner_name`, `date_from`, `date_to`) mais parâmetros exclusivos:
+
+| Parâmetro | Tipo | Default | Descrição |
+|-----------|------|---------|-----------|
+| nature | string | — | `entrada` ou `saida` (ausente = ambas) |
+| ordering | string | — | Campo de ordenação. Prefixo `-` para descendente. Valores: `amount`, `-amount`, `occurred_at`, `-occurred_at`, `store_name`, `-store_name`, `owner_name`, `-owner_name` |
+| page | int | 1 | Número da página |
+| page_size | int | 20 | Itens por página (max: 200) |
+
+**Response 200:** Lista paginada com transações detalhadas.
+
+---
+
+#### GET /available-filters/
+
+Retorna as opções disponíveis para popular os filtros da UI dinamicamente.
+
+**Response 200:**
+```json
+{
+    "stores": [
+        {"id": "uuid-...", "name": "BAR DO JOÃO", "owner_name": "JOÃO MACEDO"},
+        {"id": "uuid-...", "name": "LOJA X", "owner_name": "FULANO DE TAL"}
+    ],
+    "owners": ["JOÃO MACEDO", "FULANO DE TAL"],
+    "date_range": {
+        "min_date": "2019-03-01",
+        "max_date": "2019-03-31"
+    }
+}
+```
+
+> O campo `stores[].id` é o UUID da loja usado no parâmetro `store_id` dos demais endpoints.
+
+---
+
+#### GET /advanced-kpis/
+
+Retorna métricas adicionais para complementar o Panorama (ticket médio, volume por natureza).
+
+**Response 200:**
+```json
+{
+    "total_income": "2340.00",
+    "total_expense": "816.55",
+    "income_count": 198,
+    "expense_count": 114
+}
+```
+
+---
+
+#### GET /uploads-timeline/
+
+Retorna histórico de uploads ao longo do tempo (para contexto temporal no dashboard).
+
+**Response 200:**
+```json
+[
+    {"date": "2019-03-01", "uploads_count": 3, "transactions_count": 63}
 ]
 ```
 

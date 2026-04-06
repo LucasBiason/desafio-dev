@@ -1,0 +1,9 @@
+[run]
+source = app
+omit =
+    */tests/*
+    app/__init__.py
+
+[report]
+show_missing = true
+fail_under = 90

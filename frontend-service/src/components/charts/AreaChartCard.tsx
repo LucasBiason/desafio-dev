@@ -69,7 +69,7 @@ const AreaChartCard: FC<AreaChartCardProps> = memo(({ title, labels, data }) => 
             tickLine={false}
             allowDecimals={false}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--chart-cursor-line)' }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--chart-cursor-line)' }} isAnimationActive={false} />
           <Area
             type="monotone"
             dataKey="value"

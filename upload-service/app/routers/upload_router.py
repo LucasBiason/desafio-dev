@@ -1,12 +1,11 @@
 """API routes for CNAB file upload operations."""
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, Request, UploadFile
 from sqlalchemy.orm import Session
-
-from cnab_shared import ResourceNotFoundError, get_db
 
 from app.controllers.upload_controller import UploadController
 from app.schemas.upload_schema import UploadListResponse, UploadResponse
+from cnab_shared import ResourceNotFoundError, get_db
 
 upload_router = APIRouter(tags=["Uploads"])
 

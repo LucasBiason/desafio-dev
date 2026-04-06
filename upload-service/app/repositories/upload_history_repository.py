@@ -4,9 +4,8 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from cnab_shared import BaseRepository
-
 from app.models.upload_history import UploadHistory
+from cnab_shared import BaseRepository
 
 
 class UploadHistoryRepository(BaseRepository[UploadHistory]):
