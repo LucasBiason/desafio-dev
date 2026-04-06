@@ -211,6 +211,131 @@ class DashboardRepository:
         """
         return self._execute_list(sql, params)
 
+    def get_advanced_kpis(
+        self,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+    ) -> dict[str, Any]:
+        """Returns cash flow, average ticket, total transactions and max expense details."""
+        clauses, params = self._build_filters(store_id, owner_name, date_from, date_to)
+        join_filter = self._join_conditions(clauses)
+
+        kpi_sql = f"""
+            SELECT
+                COALESCE(SUM(CASE WHEN tt.sign = '+' THEN t.amount ELSE -t.amount END), 0)
+                    AS cash_flow,
+                COALESCE(AVG(CASE WHEN tt.sign = '+' THEN t.amount END), 0)
+                    AS avg_ticket,
+                COUNT(t.id) AS total_transactions
+            FROM cnab_store s
+            LEFT JOIN cnab_transaction t ON t.store_id = s.id{join_filter}
+            LEFT JOIN cnab_transaction_type tt ON tt.id = t.transaction_type_id
+        """
+        kpi_row = self._execute_one(kpi_sql, params)
+
+        expense_clauses = list(clauses) + ["tt.sign = '-'"]
+        expense_params = dict(params)
+        expense_join_filter = " AND ".join(expense_clauses)
+        expense_where = (" WHERE " + expense_join_filter) if expense_clauses else ""
+        expense_sql = f"""
+            SELECT
+                t.amount,
+                s.name AS store_name,
+                tt.description AS type_description,
+                t.occurred_at
+            FROM cnab_store s
+            JOIN cnab_transaction t ON t.store_id = s.id
+            JOIN cnab_transaction_type tt ON tt.id = t.transaction_type_id{expense_where}
+            ORDER BY t.amount DESC
+            LIMIT 1
+        """
+        expense_row = self._execute_one(expense_sql, expense_params)
+
+        return {"kpi": kpi_row, "max_expense": expense_row}
+
+    def get_transactions_by_hour(
+        self,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Returns transaction count grouped by hour of day (0-23)."""
+        clauses, params = self._build_filters(store_id, owner_name, date_from, date_to)
+
+        if store_id is not None or owner_name is not None:
+            store_join = " JOIN cnab_store s ON s.id = t.store_id"
+        else:
+            store_join = ""
+            clauses = []
+            params = {}
+            if date_from is not None:
+                clauses.append("t.occurred_at >= :date_from")
+                params["date_from"] = date_from
+            if date_to is not None:
+                clauses.append("t.occurred_at <= :date_to")
+                params["date_to"] = date_to
+
+        where = self._where_clause(clauses)
+        sql = f"""
+            SELECT
+                EXTRACT(HOUR FROM t.occurred_time) AS hour,
+                COUNT(t.id) AS transaction_count
+            FROM cnab_transaction t{store_join}{where}
+            GROUP BY hour
+            ORDER BY hour
+        """
+        return self._execute_list(sql, params)
+
+    def get_transactions_detail(
+        self,
+        store_id: str | None = None,
+        owner_name: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> dict[str, Any]:
+        """Returns paginated transaction detail rows joined with type and store data."""
+        clauses, params = self._build_filters(store_id, owner_name, date_from, date_to)
+        where = self._where_clause(clauses)
+        offset = (page - 1) * page_size
+        params["limit"] = page_size
+        params["offset"] = offset
+
+        count_sql = f"""
+            SELECT COUNT(t.id) AS total
+            FROM cnab_transaction t
+            JOIN cnab_store s ON s.id = t.store_id
+            JOIN cnab_transaction_type tt ON tt.id = t.transaction_type_id{where}
+        """
+        count_row = self._execute_one(count_sql, {k: v for k, v in params.items() if k not in ("limit", "offset")})
+        total = int(count_row["total"]) if count_row else 0
+
+        rows_sql = f"""
+            SELECT
+                CAST(t.id AS TEXT) AS id,
+                t.occurred_at,
+                t.occurred_time,
+                tt.description AS type_description,
+                CASE WHEN tt.sign = '+' THEN 'entrada' ELSE 'saida' END AS nature,
+                tt.sign,
+                t.amount,
+                t.card,
+                s.name AS store_name,
+                s.owner_name,
+                s.owner_cpf AS cpf
+            FROM cnab_transaction t
+            JOIN cnab_store s ON s.id = t.store_id
+            JOIN cnab_transaction_type tt ON tt.id = t.transaction_type_id{where}
+            ORDER BY t.occurred_at DESC, t.occurred_time DESC
+            LIMIT :limit OFFSET :offset
+        """
+        rows = self._execute_list(rows_sql, params)
+        return {"count": total, "rows": rows}
+
     def get_available_filters(self) -> dict[str, Any]:
         """Returns all stores, distinct owner names, and the overall date range."""
         stores_sql = """

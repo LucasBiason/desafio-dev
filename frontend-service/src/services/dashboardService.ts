@@ -27,6 +27,37 @@ export interface AvailableFilters {
   date_range: { min_date: string; max_date: string };
 }
 
+export interface AdvancedKPIs {
+  cash_flow: string;
+  avg_ticket: string;
+  total_transactions: number;
+  max_expense: {
+    amount: string;
+    store_name: string;
+    type_description: string;
+    occurred_at: string;
+  } | null;
+}
+
+export interface TransactionDetail extends Record<string, unknown> {
+  id: string;
+  occurred_at: string;
+  occurred_time: string;
+  type_description: string;
+  nature: string;
+  sign: string;
+  amount: string;
+  card: string;
+  store_name: string;
+  owner_name: string;
+  cpf: string;
+}
+
+export interface TransactionDetailResponse {
+  count: number;
+  results: TransactionDetail[];
+}
+
 export const dashboardService = {
   async getAvailableFilters(): Promise<AvailableFilters> {
     const response = await api.get('/api/cnab/dashboard/available-filters');
@@ -50,6 +81,27 @@ export const dashboardService = {
 
   async getTransactionsTimeline(params?: DashboardFilters): Promise<ChartData> {
     const response = await api.get('/api/cnab/dashboard/uploads-timeline', { params });
+    return response.data;
+  },
+
+  async getAdvancedKpis(params?: DashboardFilters): Promise<AdvancedKPIs> {
+    const response = await api.get('/api/cnab/dashboard/advanced-kpis', { params });
+    return response.data;
+  },
+
+  async getTransactionsByHour(params?: DashboardFilters): Promise<ChartData> {
+    const response = await api.get('/api/cnab/dashboard/transactions-by-hour', { params });
+    return response.data;
+  },
+
+  async getTransactionsDetail(
+    page: number,
+    pageSize: number,
+    params?: DashboardFilters,
+  ): Promise<TransactionDetailResponse> {
+    const response = await api.get('/api/cnab/dashboard/transactions-detail', {
+      params: { ...params, page, page_size: pageSize },
+    });
     return response.data;
   },
 };
