@@ -44,6 +44,7 @@ erDiagram
         string card "Cartão mascarado"
         date occurred_at "Data da ocorrência"
         time occurred_time "Hora da ocorrência (UTC-3)"
+        string content_hash UK "SHA-256 para deduplicação"
         boolean is_active
         datetime created_at
         datetime updated_at
@@ -161,9 +162,12 @@ Todas as tabelas dos serviços FastAPI herdam do BaseModel:
 | card | VARCHAR(20) | NOT NULL | Cartão mascarado |
 | occurred_at | DATE | NOT NULL | Data da ocorrência |
 | occurred_time | TIME | NOT NULL | Hora (UTC-3) |
+| content_hash | VARCHAR(64) | UNIQUE, NOT NULL | SHA-256 calculado sobre os campos da transação para deduplicação |
 | + campos BaseModel | | | |
 
 **Índice:** `(store_id, occurred_at)` — otimiza consulta de transações por loja.
+
+**Unique constraint:** `content_hash` — garante que a mesma transação não seja inserida mais de uma vez, mesmo que o arquivo seja enviado repetidamente.
 
 **Nota:** `upload_id` é uma referência cruzada (não FK real) ao banco cnab_uploads do upload-service.
 

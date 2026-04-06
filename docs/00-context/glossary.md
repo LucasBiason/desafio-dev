@@ -14,3 +14,10 @@
 | Normalização | Conversão dos dados brutos para formato adequado (ex: valor / 100) |
 | CPF | Cadastro de Pessoa Física, documento de identificação brasileiro |
 | Largura Fixa | Formato de arquivo onde cada campo ocupa posições predefinidas |
+| Microsserviço | Serviço com responsabilidade única, banco de dados próprio e implantação independente |
+| Fernet | Esquema de criptografia simétrica usado na comunicação entre upload-service e cnab-service. Gera tokens com expiração automática (TTL) impossíveis de forjar sem a chave compartilhada |
+| content_hash | Hash SHA-256 calculado a partir dos campos da transação para identificar duplicatas. Transações com o mesmo hash são ignoradas na inserção |
+| Deduplicação | Mecanismo que impede a inserção de transações duplicadas. Baseia-se no campo content_hash da tabela cnab_transaction |
+| Worker | Processo em background (upload-worker) que faz polling no banco a cada 10 segundos buscando uploads pendentes e os envia em lotes de 1000 transações ao cnab-service |
+| Dashboard | Painel analítico de conciliação bancária servido pelo cnab-dashboard. Organizado em três camadas: Panorama (KPIs), Desempenho (gráficos) e Operação (detalhamento) |
+| Seed | Dados iniciais inseridos via migration. Os 9 tipos de transação CNAB são carregados por seed na tabela cnab_transaction_type |
