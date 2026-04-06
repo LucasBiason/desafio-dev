@@ -41,6 +41,7 @@ flowchart TB
   FE -->|"/api/user/*"| US
   FE -->|"/api/upload/*"| UPS
   FE -->|"/api/cnab/*"| CS
+  FE -->|"/api/dashboard/*"| DS
   UPS -->|"Fernet token"| CS
   UPS -.->|"delega processamento"| UPW
   UPW -->|"Fernet token"| CS
@@ -70,7 +71,7 @@ flowchart TB
 | Upload Worker | mesma imagem do upload-service | Processamento em background (polling a cada 10s) |
 | CNAB Service | FastAPI + SQLAlchemy + Pydantic V2 | Armazenamento, consulta de transações e analytics do dashboard |
 | Shared Library | cnab-shared | Código compartilhado entre microsserviços FastAPI |
-| Frontend | React 18 + TypeScript + Vite + Tailwind | SPA moderna com paleta bycoders_ |
+| Frontend | React 19 + TypeScript 5.9 + Vite 8 + Tailwind + Recharts | SPA moderna com paleta bycoders_ |
 | Database | PostgreSQL 16 (3 bancos) | Isolamento por serviço |
 | Infra | Docker Compose + Nginx | Orquestração e proxy reverso |
 | Auth Inter-serviço | Fernet Token | Comunicação segura upload-service → cnab-service |
