@@ -12,13 +12,14 @@ services:
     env_file:
       - configs/.env
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-cnab_users}
+      POSTGRES_USER: ${DB_USER:-cnab}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cnab123}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./configs/postgres:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cnab}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -81,6 +82,7 @@ services:
       - configs/.env
     environment:
       - PORT=8002
+      - DATABASE_URL=${CNAB_DATABASE_URL:-postgresql://cnab:cnab123@db:5432/cnab_data}
     depends_on:
       db:
         condition: service_healthy
@@ -94,6 +96,56 @@ services:
       start_period: 10s
     volumes:
       - ./cnab-service/app:/app/app
+
+  upload-service:
+    build:
+      context: .
+      dockerfile: upload-service/Dockerfile
+      target: test
+    container_name: desafio-dev-upload-service
+    command: ["runserver"]
+    ports:
+      - "${UPLOAD_SERVICE_PORT:-7003}:8003"
+    env_file:
+      - configs/.env
+    environment:
+      - PORT=8003
+      - DATABASE_URL=${UPLOAD_DATABASE_URL:-postgresql://cnab:cnab123@db:5432/cnab_uploads}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - ./upload-service/app:/app/app
+      - upload_data:/app/uploads
+
+  upload-worker:
+    build:
+      context: .
+      dockerfile: upload-service/Dockerfile
+      target: test
+    container_name: desafio-dev-upload-worker
+    command: ["worker"]
+    env_file:
+      - configs/.env
+    environment:
+      - DATABASE_URL=${UPLOAD_DATABASE_URL:-postgresql://cnab:cnab123@db:5432/cnab_uploads}
+      - WORKER_POLL_INTERVAL=10
+    depends_on:
+      db:
+        condition: service_healthy
+      upload-service:
+        condition: service_healthy
+    volumes:
+      - ./upload-service/app:/app/app
+      - upload_data:/app/uploads
 
   # ============================================
   # Frontend
@@ -111,7 +163,10 @@ services:
         condition: service_healthy
       cnab-service:
         condition: service_healthy
+      upload-service:
+        condition: service_healthy
 
 volumes:
   postgres_data:
   redis_data:
+  upload_data:

@@ -41,7 +41,7 @@ const Login: FC = () => {
     <div
       className="min-h-screen flex items-center justify-center px-4 py-12"
       style={{
-        background: 'linear-gradient(135deg, #2e3440 0%, #1e2a3a 50%, #2e3440 100%)',
+        background: 'linear-gradient(135deg, #171616 0%, #0d0d0d 50%, #171616 100%)',
       }}
     >
       <div className="w-full max-w-md">
@@ -49,19 +49,19 @@ const Login: FC = () => {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4"
             style={{
-              background: 'rgba(59, 66, 82, 0.6)',
+              background: 'rgba(30, 30, 30, 0.6)',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
-              border: '1px solid rgba(76, 86, 106, 0.3)',
+              border: '1px solid rgba(58, 58, 58, 0.3)',
             }}
           >
-            <FontAwesomeIcon icon={faFileLines} size="2x" className="text-[#88c0d0]" aria-hidden="true" />
+            <FontAwesomeIcon icon={faFileLines} size="2x" className="text-[#4FFA7B]" aria-hidden="true" />
           </div>
 
           <h1
             className="text-3xl font-bold tracking-tight mb-2"
             style={{
-              background: 'linear-gradient(135deg, #88c0d0, #81a1c1)',
+              background: 'linear-gradient(135deg, #4FFA7B, #02BE3B)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
@@ -70,7 +70,7 @@ const Login: FC = () => {
             CNAB Parser
           </h1>
 
-          <p className="text-sm" style={{ color: '#d8dee9' }}>
+          <p className="text-sm" style={{ color: '#D8D8D8' }}>
             Importação e análise de transações CNAB
           </p>
         </div>
@@ -82,9 +82,9 @@ const Login: FC = () => {
             role="alert"
             aria-live="polite"
             style={{
-              background: 'rgba(235, 203, 139, 0.1)',
-              border: '1px solid rgba(235, 203, 139, 0.4)',
-              color: '#ebcb8b',
+              background: 'rgba(255, 184, 0, 0.1)',
+              border: '1px solid rgba(255, 184, 0, 0.4)',
+              color: '#FFB800',
             }}
           >
             <FontAwesomeIcon icon={faTriangleExclamation} size="sm" className="mt-0.5 shrink-0" aria-hidden="true" />
@@ -99,9 +99,9 @@ const Login: FC = () => {
             role="alert"
             aria-live="assertive"
             style={{
-              background: 'rgba(191, 97, 106, 0.1)',
-              border: '1px solid rgba(191, 97, 106, 0.4)',
-              color: '#bf616a',
+              background: 'rgba(255, 68, 68, 0.1)',
+              border: '1px solid rgba(255, 68, 68, 0.4)',
+              color: '#FF4444',
             }}
           >
             <FontAwesomeIcon icon={faCircleExclamation} size="sm" className="mt-0.5 shrink-0" aria-hidden="true" />
@@ -113,10 +113,10 @@ const Login: FC = () => {
         <div
           className="rounded-2xl p-6"
           style={{
-            background: 'rgba(59, 66, 82, 0.6)',
+            background: 'rgba(30, 30, 30, 0.6)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(76, 86, 106, 0.3)',
+            border: '1px solid rgba(58, 58, 58, 0.3)',
           }}
         >
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
@@ -125,7 +125,7 @@ const Login: FC = () => {
               <label
                 htmlFor="username"
                 className="block text-sm font-medium mb-1.5"
-                style={{ color: '#d8dee9' }}
+                style={{ color: '#D8D8D8' }}
               >
                 Usuário
               </label>
@@ -140,16 +140,16 @@ const Login: FC = () => {
                 disabled={loading}
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-colors focus:outline-none"
                 style={{
-                  background: 'rgba(67, 76, 94, 0.5)',
-                  border: '1px solid #4c566a',
-                  color: '#eceff4',
+                  background: 'rgba(42, 42, 42, 0.5)',
+                  border: '1px solid #3a3a3a',
+                  color: '#FFFFFF',
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#88c0d0';
-                  e.currentTarget.style.boxShadow = '0 0 0 1px #88c0d0';
+                  e.currentTarget.style.borderColor = '#4FFA7B';
+                  e.currentTarget.style.boxShadow = '0 0 0 1px #4FFA7B';
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#4c566a';
+                  e.currentTarget.style.borderColor = '#3a3a3a';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               />
@@ -160,7 +160,7 @@ const Login: FC = () => {
               <label
                 htmlFor="password"
                 className="block text-sm font-medium mb-1.5"
-                style={{ color: '#d8dee9' }}
+                style={{ color: '#D8D8D8' }}
               >
                 Senha
               </label>
@@ -175,16 +175,16 @@ const Login: FC = () => {
                 disabled={loading}
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-colors focus:outline-none"
                 style={{
-                  background: 'rgba(67, 76, 94, 0.5)',
-                  border: '1px solid #4c566a',
-                  color: '#eceff4',
+                  background: 'rgba(42, 42, 42, 0.5)',
+                  border: '1px solid #3a3a3a',
+                  color: '#FFFFFF',
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#88c0d0';
-                  e.currentTarget.style.boxShadow = '0 0 0 1px #88c0d0';
+                  e.currentTarget.style.borderColor = '#4FFA7B';
+                  e.currentTarget.style.boxShadow = '0 0 0 1px #4FFA7B';
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#4c566a';
+                  e.currentTarget.style.borderColor = '#3a3a3a';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               />
@@ -196,15 +196,15 @@ const Login: FC = () => {
               disabled={loading}
               className="w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
               style={{
-                backgroundColor: loading ? '#5e81ac80' : '#5e81ac',
-                color: '#eceff4',
+                backgroundColor: loading ? '#02BE3B80' : '#02BE3B',
+                color: '#FFFFFF',
                 cursor: loading ? 'not-allowed' : 'pointer',
               }}
               onMouseEnter={(e) => {
-                if (!loading) e.currentTarget.style.backgroundColor = '#81a1c1';
+                if (!loading) e.currentTarget.style.backgroundColor = '#029E32';
               }}
               onMouseLeave={(e) => {
-                if (!loading) e.currentTarget.style.backgroundColor = '#5e81ac';
+                if (!loading) e.currentTarget.style.backgroundColor = '#02BE3B';
               }}
             >
               {loading ? (
@@ -220,7 +220,7 @@ const Login: FC = () => {
         </div>
 
         {/* Footer */}
-        <p className="text-center mt-6 text-xs" style={{ color: '#4c566a' }}>
+        <p className="text-center mt-6 text-xs" style={{ color: '#3a3a3a' }}>
           v0.1.0
         </p>
       </div>

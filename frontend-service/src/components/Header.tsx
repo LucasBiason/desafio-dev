@@ -5,9 +5,8 @@ import { useAuth } from '../hooks/useAuth';
 
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
-  '/upload': 'Upload de Arquivo',
+  '/upload': 'Upload de Arquivos',
   '/stores': 'Lojas',
-  '/history': 'Histórico',
 };
 
 const Header: FC = memo(() => {
@@ -17,20 +16,20 @@ const Header: FC = memo(() => {
   const pageTitle = PAGE_TITLES[location.pathname] ?? 'CNAB Parser';
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-[#3b4252] border-b border-[#434c5e] flex items-center justify-between px-6">
+    <header className="sticky top-0 z-30 h-16 bg-[#1e1e1e] border-b border-[#2a2a2a] flex items-center justify-between px-6">
       <div>
-        <h2 className="text-[#eceff4] text-base font-semibold leading-none">{pageTitle}</h2>
-        <p className="text-[#d8dee9] text-xs mt-1">
-          <span className="text-[#81a1c1]">CNAB Parser</span>
-          <span className="mx-1 text-[#d8dee9]">/</span>
-          <span className="text-[#eceff4]">{pageTitle}</span>
+        <h2 className="text-[#FFFFFF] text-base font-semibold leading-none">{pageTitle}</h2>
+        <p className="text-[#D8D8D8] text-xs mt-1">
+          <span className="text-[#4FFA7B]">CNAB Parser</span>
+          <span className="mx-1 text-[#D8D8D8]">/</span>
+          <span className="text-[#FFFFFF]">{pageTitle}</span>
         </p>
       </div>
 
       <div className="flex items-center gap-3">
-        <span className="text-[#d8dee9] text-sm">
+        <span className="text-[#D8D8D8] text-sm">
           Olá,{' '}
-          <span className="text-[#88c0d0] font-medium">{user?.username ?? 'Usuário'}</span>
+          <span className="text-[#4FFA7B] font-medium">{user?.username ?? 'Usuário'}</span>
         </span>
       </div>
     </header>

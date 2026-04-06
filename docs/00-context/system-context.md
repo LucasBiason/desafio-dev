@@ -14,37 +14,40 @@ Sistema web para importação e visualização de transações financeiras no fo
 ## Contexto do Sistema
 
 ```mermaid
-flowchart LR
+flowchart TB
   subgraph User["Usuário"]
-    OP[Operador]
+    Browser[Browser]
   end
 
-  subgraph Frontend
+  subgraph Frontend["Frontend"]
     FE["React + Nginx\n(porta 7000)"]
   end
 
-  subgraph Backend["Microsserviços"]
+  subgraph Services["Microsserviços"]
     US["user-service\n(Django + JWT)\n(porta 7001)"]
+    UPS["upload-service\n(FastAPI)\n(porta 7003)"]
     CS["cnab-service\n(FastAPI)\n(porta 7002)"]
-  end
-
-  subgraph Processing["Processamento"]
-    UP["Upload CNAB"]
-    PA["Parser + Normalizador"]
+    SH["cnab-shared\n(biblioteca)"]
   end
 
   subgraph Data["Dados"]
-    PG[("PostgreSQL 16")]
-    RD[("Redis 7")]
+    PG_USERS[("cnab_users")]
+    PG_UPLOADS[("cnab_uploads")]
+    PG_DATA[("cnab_data")]
   end
 
-  OP --> FE
+  Browser --> FE
   FE -->|"/api/user/*"| US
+  FE -->|"/api/upload/*"| UPS
   FE -->|"/api/cnab/*"| CS
-  CS --> UP --> PA --> PG
-  CS -->|"valida token"| US
-  US --> PG
-  CS --> RD
+  UPS -->|"Fernet token"| CS
+  CS -.->|"valida JWT"| US
+  UPS -.->|"valida JWT"| US
+  SH -.-> CS
+  SH -.-> UPS
+  US --> PG_USERS
+  UPS --> PG_UPLOADS
+  CS --> PG_DATA
 ```
 
 ## Restrições
@@ -60,12 +63,18 @@ flowchart LR
 | Camada | Tecnologia | Justificativa |
 |--------|-----------|---------------|
 | Auth Service | Django 5 + DRF + PyJWT | Autenticação e gestão de usuários |
-| CNAB Service | FastAPI + SQLAlchemy + Pydantic V2 | Processamento de arquivos CNAB |
-| Shared Library | cnab-shared | Código compartilhado entre microsserviços |
+| Upload Service | FastAPI + cnab-shared | Upload, parsing e processamento em background |
+| CNAB Service | FastAPI + SQLAlchemy + Pydantic V2 | Armazenamento e consulta de transações |
+| Shared Library | cnab-shared | Código compartilhado entre microsserviços FastAPI |
 | Frontend | React 18 + TypeScript + Vite + Tailwind | SPA moderna com tema Nord |
-| Database | PostgreSQL 16 | Requisito do desafio, melhor DB relacional |
-| Cache | Redis 7 | Cache e sessões |
+| Database | PostgreSQL 16 (3 bancos) | Isolamento por serviço |
 | Infra | Docker Compose + Nginx | Orquestração e proxy reverso |
-| CI | Makefile | Automação de comandos |
-| Auth | JWT (PyJWT) | Diferencial solicitado |
+| Auth Inter-serviço | Fernet Token | Comunicação segura upload-service → cnab-service |
+| Auth Usuário | JWT (PyJWT) | Autenticação do usuário no frontend |
 | Docs API | Swagger/Redoc (drf-yasg) | Diferencial solicitado |
+
+## Decisões Arquiteturais
+
+| ADR | Decisão |
+|-----|---------|
+| [ADR-001](../90-decisions/ADR-001-upload-service-separation.md) | Separação do upload-service do cnab-service com autenticação Fernet |
