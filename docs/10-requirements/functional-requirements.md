@@ -93,7 +93,7 @@ O sistema disponibiliza documentação interativa da API.
 ## RF-007: Dashboard de Conciliação Bancária
 
 **Prioridade:** Bônus (diferencial)
-**Serviço:** cnab-service (analytics) + frontend-service (visualização)
+**Serviço:** cnab-dashboard (analytics) + frontend-service (visualização)
 
 O sistema exibe um dashboard analítico organizado em três camadas narrativas:
 
@@ -114,7 +114,7 @@ O sistema exibe um dashboard analítico organizado em três camadas narrativas:
 ## RF-008: Filtros Interativos no Dashboard
 
 **Prioridade:** Bônus (diferencial)
-**Serviço:** cnab-service (parâmetros de query) + frontend-service (UI)
+**Serviço:** cnab-dashboard (parâmetros de query) + frontend-service (UI)
 
 O dashboard deve responder a filtros que afetam todas as visualizações simultaneamente:
 
@@ -123,4 +123,4 @@ O dashboard deve responder a filtros que afetam todas as visualizações simulta
 - **Período:** seleção de data de início e data de fim
 - **Natureza:** toggle para exibir apenas entradas, apenas saídas ou ambas
 
-Os filtros disponíveis são retornados pelo endpoint `GET /dashboard/available-filters/` do cnab-service e populam as opções da UI dinamicamente.
+Os filtros disponíveis são retornados pelo endpoint `GET /available-filters/` do cnab-dashboard (via Nginx: `/api/dashboard/available-filters/`) e populam as opções da UI dinamicamente.

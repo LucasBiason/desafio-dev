@@ -235,8 +235,9 @@ desafio-dev/
 | redis | redis:7-alpine | 6380 | 6379 | — | Cache e sessões |
 | user-service | custom (Django) | 7001 | 8001 | cnab_users | Autenticação e gestão de usuários |
 | upload-service | custom (FastAPI) | 7003 | 8003 | cnab_uploads | Recebimento e parsing de arquivos CNAB |
-| upload-worker | mesma do upload-service | — | — | cnab_uploads | Processamento em background (polling 10s) |
-| cnab-service | custom (FastAPI) | 7002 | 8002 | cnab_data | Armazenamento, consulta de transações e dashboard |
+| upload-worker | mesma do upload-service | — | — | cnab_uploads | Processamento em background (polling 10s), lotes de 1000 |
+| cnab-service | custom (FastAPI) | 7002 | 8002 | cnab_data | Armazenamento e consulta de lojas e transações |
+| cnab-dashboard | custom (FastAPI) | 7004 | 8004 | cnab_data (read-only) | Analytics e KPIs do dashboard |
 | frontend | custom (React+Nginx) | 7000 | 3000 | — | Interface web e proxy reverso |
 
 ## Dockerfiles (Multi-stage)

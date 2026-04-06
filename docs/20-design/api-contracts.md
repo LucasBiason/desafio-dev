@@ -437,15 +437,14 @@ Lista os 9 tipos de transação CNAB. Sem paginação (dados fixos). Requer JWT.
 
 Serviço read-only que consulta o banco `cnab_data` para fornecer estatísticas agregadas.
 
-Todos os endpoints abaixo aceitam os mesmos parâmetros de filtro opcionais:
+Todos os endpoints abaixo aceitam os mesmos parâmetros de filtro opcionais (exceto `transactions-detail`, que tem parâmetros adicionais):
 
 | Parâmetro | Tipo | Descrição |
 |-----------|------|-----------|
-| store_name | string | Filtrar por nome da loja (contém) |
-| owner_name | string | Filtrar por nome do representante (contém) |
+| store_id | UUID | Filtrar por UUID da loja |
+| owner_name | string | Filtrar por nome do representante (correspondência parcial) |
 | date_from | date | Data de início (YYYY-MM-DD) |
 | date_to | date | Data de fim (YYYY-MM-DD) |
-| nature | string | `entrada`, `saida` ou ausente (ambas) |
 
 Todos requerem JWT.
 
@@ -515,15 +514,16 @@ Retorna densidade de transações por hora do dia para o gráfico de área (terc
 
 #### GET /transactions-detail/
 
-DataTable da terceira camada com todas as transações do período filtrado. Suporta paginação.
+DataTable da terceira camada com todas as transações do período filtrado. Aceita os filtros comuns (`store_id`, `owner_name`, `date_from`, `date_to`) mais parâmetros exclusivos:
 
-**Paginação:**
 | Parâmetro | Tipo | Default | Descrição |
 |-----------|------|---------|-----------|
+| nature | string | — | `entrada` ou `saida` (ausente = ambas) |
+| ordering | string | — | Campo de ordenação. Prefixo `-` para descendente. Valores: `amount`, `-amount`, `occurred_at`, `-occurred_at`, `store_name`, `-store_name`, `owner_name`, `-owner_name` |
 | page | int | 1 | Número da página |
-| page_size | int | 20 | Itens por página (max: 100) |
+| page_size | int | 20 | Itens por página (max: 200) |
 
-**Response 200:** Lista paginada no mesmo formato de `GET /stores/{id}/transactions/`.
+**Response 200:** Lista paginada com transações detalhadas.
 
 ---
 
@@ -534,14 +534,19 @@ Retorna as opções disponíveis para popular os filtros da UI dinamicamente.
 **Response 200:**
 ```json
 {
-    "stores": ["BAR DO JOÃO", "LOJA X", "MERCADO Y"],
+    "stores": [
+        {"id": "uuid-...", "name": "BAR DO JOÃO", "owner_name": "JOÃO MACEDO"},
+        {"id": "uuid-...", "name": "LOJA X", "owner_name": "FULANO DE TAL"}
+    ],
     "owners": ["JOÃO MACEDO", "FULANO DE TAL"],
     "date_range": {
-        "min": "2019-03-01",
-        "max": "2019-03-31"
+        "min_date": "2019-03-01",
+        "max_date": "2019-03-31"
     }
 }
 ```
+
+> O campo `stores[].id` é o UUID da loja usado no parâmetro `store_id` dos demais endpoints.
 
 ---
 

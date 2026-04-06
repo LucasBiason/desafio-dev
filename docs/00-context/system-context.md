@@ -28,6 +28,7 @@ flowchart TB
     UPS["upload-service\n(FastAPI)\n(porta 7003)"]
     UPW["upload-worker\n(mesma imagem)\n(background)"]
     CS["cnab-service\n(FastAPI)\n(porta 7002)"]
+    DS["cnab-dashboard\n(FastAPI)\n(porta 7004)"]
     SH["cnab-shared\n(biblioteca)"]
   end
 
@@ -47,11 +48,14 @@ flowchart TB
   UPW -->|"Fernet token"| CS
   CS -.->|"valida JWT"| US
   UPS -.->|"valida JWT"| US
+  DS -.->|"valida JWT"| US
   SH -.-> CS
   SH -.-> UPS
+  SH -.-> DS
   US --> PG_USERS
   UPS --> PG_UPLOADS
   CS --> PG_DATA
+  DS -.->|"read-only"| PG_DATA
 ```
 
 ## Restrições
@@ -68,8 +72,9 @@ flowchart TB
 |--------|-----------|---------------|
 | Auth Service | Django 5 + DRF + PyJWT | Autenticação e gestão de usuários |
 | Upload Service | FastAPI + cnab-shared | Upload e parsing de arquivos CNAB |
-| Upload Worker | mesma imagem do upload-service | Processamento em background (polling a cada 10s) |
-| CNAB Service | FastAPI + SQLAlchemy + Pydantic V2 | Armazenamento, consulta de transações e analytics do dashboard |
+| Upload Worker | mesma imagem do upload-service | Processamento em background (polling a cada 10s), envia lotes de 1000 transações ao cnab-service |
+| CNAB Service | FastAPI + SQLAlchemy + Pydantic V2 | Armazenamento e consulta de lojas e transações |
+| CNAB Dashboard | FastAPI + SQL otimizado + cnab-shared | Analytics read-only — 8 endpoints de agregação sobre cnab_data |
 | Shared Library | cnab-shared | Código compartilhado entre microsserviços FastAPI |
 | Frontend | React 19 + TypeScript 5.9 + Vite 8 + Tailwind + Recharts | SPA moderna com paleta bycoders_ |
 | Database | PostgreSQL 16 (3 bancos) | Isolamento por serviço |
