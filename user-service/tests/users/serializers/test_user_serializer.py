@@ -22,16 +22,22 @@ class TestUserSerializerFields:
         serializer = UserSerializer(user)
         data = serializer.data
 
-        expected_fields = {"id", "username", "email", "first_name", "last_name", "is_active", "is_staff", "created_at", "updated_at"}
+        expected_fields = {
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "is_active",
+            "is_staff",
+            "created_at",
+            "updated_at",
+        }
         assert expected_fields.issubset(set(data.keys()))
 
     def test_serializer_read_only_fields(self) -> None:
         """id, created_at and updated_at are read-only."""
-        read_only_fields = {
-            field.field_name
-            for field in UserSerializer().fields.values()
-            if field.read_only
-        }
+        read_only_fields = {field.field_name for field in UserSerializer().fields.values() if field.read_only}
 
         assert "id" in read_only_fields
         assert "created_at" in read_only_fields

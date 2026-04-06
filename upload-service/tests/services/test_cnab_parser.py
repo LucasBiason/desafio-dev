@@ -1,6 +1,5 @@
 """Tests for CnabParser."""
 
-import pytest
 
 from app.services.cnab_parser import CnabParser
 

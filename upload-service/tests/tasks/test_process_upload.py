@@ -1,7 +1,6 @@
 """Tests for process_pending_uploads task."""
 
 import uuid
-import pytest
 from unittest.mock import MagicMock, patch
 
 from app.tasks.process_upload import process_pending_uploads

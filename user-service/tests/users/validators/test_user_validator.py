@@ -4,11 +4,11 @@ import pytest
 
 from users.models.user import User
 from users.repositories.user import UserRepository
-from users.validators.user import UserValidator
 from users.validators.exceptions import (
     InvalidUserDataException,
     UnauthorizedUserException,
 )
+from users.validators.user import UserValidator
 
 
 @pytest.fixture

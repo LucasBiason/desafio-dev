@@ -2,7 +2,7 @@
 
 import pytest
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.test import APIRequestFactory
 
 from authentication.controllers.auth_controller import JWTAuthentication
 from authentication.exceptions import UserNotActiveException
@@ -17,9 +17,7 @@ class TestJWTAuthenticationLogin:
 
     def test_login_success(self) -> None:
         """Should return encoded_token and user data."""
-        User.objects.create_user(
-            username="authuser", email="auth@example.com", password="authpass123"
-        )
+        User.objects.create_user(username="authuser", email="auth@example.com", password="authpass123")
         request = factory.post("/auth/v1/login/")
         request.data = {"username": "authuser", "password": "authpass123"}
 
@@ -31,9 +29,7 @@ class TestJWTAuthenticationLogin:
 
     def test_login_wrong_password(self) -> None:
         """Should raise AuthenticationFailed on wrong password."""
-        User.objects.create_user(
-            username="authuser2", email="auth2@example.com", password="authpass123"
-        )
+        User.objects.create_user(username="authuser2", email="auth2@example.com", password="authpass123")
         request = factory.post("/auth/v1/login/")
         request.data = {"username": "authuser2", "password": "wrongpass"}
 

@@ -2,7 +2,6 @@
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, Optional, Tuple
 
 import jwt
 from django.conf import settings
@@ -17,12 +16,12 @@ class AccessToken:
     """Encodes, decodes and validates JWT tokens."""
 
     def __init__(self) -> None:
-        self.valid_until: Optional[datetime] = None
+        self.valid_until: datetime | None = None
         self.validate_dt: bool = False
         self.encoded_token: str = ""
-        self.decoded_token: Dict = {}
+        self.decoded_token: dict = {}
 
-    def encode(self, user_id: str) -> Tuple[str, str]:
+    def encode(self, user_id: str) -> tuple[str, str]:
         """Return (encoded_token, expiration_string) for the given user ID."""
         expire_hours = getattr(settings, "LOGIN_EXPIRE", 5)
         valid_dt = datetime.now() + timedelta(hours=expire_hours)
@@ -36,7 +35,7 @@ class AccessToken:
         logger.debug("[AccessToken] Token encoded successfully.")
         return encoded_token, validate
 
-    def decode_token(self, encoded_token: str) -> Dict:
+    def decode_token(self, encoded_token: str) -> dict:
         """Decode and return the token payload. Raises InvalidTokenException on failure."""
         try:
             logger.debug("[AccessToken] Decoding token...")
@@ -52,15 +51,13 @@ class AccessToken:
             logger.debug("[AccessToken] Validating expiration date...")
             self.valid_until = datetime.strptime(to_validate, "%m/%d/%Y %H:%M:%S")
             if self.valid_until <= datetime.now():
-                raise exceptions.TokenExpiredException(
-                    valid_until=self.valid_until
-                ) from None
+                raise exceptions.TokenExpiredException(valid_until=self.valid_until) from None
             return True
         except ValueError as e:
             logger.error("[AccessToken] Invalid expiration date format: %s", e)
             raise exceptions.InvalidTokenException()
 
-    def validate(self, token: str) -> Dict:
+    def validate(self, token: str) -> dict:
         """Parse, decode, and validate the Authorization header token. Returns the payload."""
         self.encoded_token = self._validate_token_format(token)
         self.decoded_token = self.decode_token(self.encoded_token)

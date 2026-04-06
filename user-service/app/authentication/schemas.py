@@ -31,12 +31,8 @@ login = swagger_auto_schema(
         type=openapi.TYPE_OBJECT,
         required=["username", "password"],
         properties={
-            "username": openapi.Schema(
-                type=openapi.TYPE_STRING, description="The username of the user."
-            ),
-            "password": openapi.Schema(
-                type=openapi.TYPE_STRING, description="The password of the user."
-            ),
+            "username": openapi.Schema(type=openapi.TYPE_STRING, description="The username of the user."),
+            "password": openapi.Schema(type=openapi.TYPE_STRING, description="The password of the user."),
         },
     ),
     operation_description=(

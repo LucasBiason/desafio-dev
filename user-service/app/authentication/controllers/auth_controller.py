@@ -1,19 +1,18 @@
 """JWT-based authentication: login, token validation, and DRF authenticate hook."""
 
 import logging
-from typing import Dict, Optional, Tuple
 
 from django.contrib.auth import authenticate
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from authentication.services.access_token import AccessToken
 from authentication.exceptions import (
     UserEmailRequiredException,
     UserNotActiveException,
     UserPasswordRequiredException,
 )
 from authentication.serializers import UserSerializer
+from authentication.services.access_token import AccessToken
 from users.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -23,7 +22,7 @@ class JWTAuthentication(BaseAuthentication):
     """DRF authentication backend for JWT tokens."""
 
     @staticmethod
-    def login(request) -> Dict:
+    def login(request) -> dict:
         """Authenticate credentials and return a JWT token with user data."""
         username = request.data.get("username")
         password = request.data.get("password")
@@ -36,9 +35,7 @@ class JWTAuthentication(BaseAuthentication):
         user = authenticate(request, username=username, password=password)
 
         if not user:
-            raise AuthenticationFailed(
-                "Unable to authenticate with provided credentials."
-            )
+            raise AuthenticationFailed("Unable to authenticate with provided credentials.")
 
         if not user.is_active:
             raise UserNotActiveException(user.username)
@@ -75,7 +72,7 @@ class JWTAuthentication(BaseAuthentication):
             "user": user_data,
         }
 
-    def authenticate(self, request) -> Tuple[Optional[object], Optional[Dict]]:
+    def authenticate(self, request) -> tuple[object | None, dict | None]:
         """DRF authenticate hook — returns (user, token_data) from the Authorization header."""
         token = request.headers.get("Authorization", "")
         token_data = AccessToken().validate(token)

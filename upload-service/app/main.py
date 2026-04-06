@@ -1,8 +1,7 @@
 """Upload Service — CNAB file upload and processing."""
 
-from cnab_shared import CNABFastAPI, AuthMiddleware
-
 from app.routers.upload_router import upload_router
+from cnab_shared import AuthMiddleware, CNABFastAPI
 
 app = CNABFastAPI().setup(
     title="CNAB Upload Service",

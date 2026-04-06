@@ -3,7 +3,7 @@
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from cryptography.fernet import Fernet
@@ -21,7 +21,7 @@ class CnabServiceClient:
         fernet = Fernet(self.secret_key.encode())
         payload = json.dumps({
             "service": "upload-service",
-            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+            "timestamp": datetime.now(tz=UTC).isoformat(),
         }).encode()
         return fernet.encrypt(payload).decode()
 
