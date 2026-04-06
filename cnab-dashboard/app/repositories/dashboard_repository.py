@@ -6,7 +6,6 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-
 # Consistent color palette based on green tones for chart types
 _TYPE_COLORS = [
     "#02BE3B",
@@ -155,7 +154,7 @@ class DashboardRepository:
     ) -> list[dict[str, Any]]:
         """Returns transaction count per type along with type description, ordered by code."""
         clauses, params = self._build_filters(store_id, owner_name, date_from, date_to)
-        join_filter = self._join_conditions(clauses)
+        self._join_conditions(clauses)
         has_store_filter = store_id is not None or owner_name is not None
         where = self._where_clause(clauses)
 

@@ -5,7 +5,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.repositories.dashboard_repository import DashboardRepository, _TYPE_COLORS
+from app.repositories.dashboard_repository import _TYPE_COLORS, DashboardRepository
 from app.schemas.dashboard_schema import (
     AdvancedKPIsResponse,
     AvailableFiltersResponse,
@@ -237,10 +237,7 @@ class DashboardController:
     def get_available_filters(self) -> AvailableFiltersResponse:
         """Returns stores, owner names and date range for filter dropdowns."""
         result: dict[str, Any] = self._repo.get_available_filters()
-        stores = [
-            {"id": row["id"], "name": row["name"], "owner_name": row["owner_name"]}
-            for row in result["stores"]
-        ]
+        stores = [{"id": row["id"], "name": row["name"], "owner_name": row["owner_name"]} for row in result["stores"]]
         return AvailableFiltersResponse(
             stores=stores,
             owners=result["owners"],

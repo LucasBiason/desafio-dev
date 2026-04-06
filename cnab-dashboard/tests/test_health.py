@@ -11,5 +11,5 @@ class TestHealthCheck:
 
     def test_health_returns_healthy(self, client):
         """GET /health returns status healthy."""
-        data = response = client.get("/health").json()
+        data = client.get("/health").json()
         assert data["status"] == "healthy"

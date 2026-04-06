@@ -14,4 +14,5 @@ from fastapi.testclient import TestClient
 def client():
     """Returns a TestClient for the Dashboard Service."""
     from app.main import app
+
     return TestClient(app)

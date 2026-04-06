@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.controllers.dashboard_controller import DashboardController
-from cnab_shared import require_jwt
 from app.schemas.dashboard_schema import (
     AdvancedKPIsResponse,
     AvailableFiltersResponse,
@@ -15,7 +14,7 @@ from app.schemas.dashboard_schema import (
     TransactionsByTypeResponse,
     UploadsTimelineResponse,
 )
-from cnab_shared import get_db
+from cnab_shared import get_db, require_jwt
 
 dashboard_router = APIRouter(tags=["Dashboard"])
 

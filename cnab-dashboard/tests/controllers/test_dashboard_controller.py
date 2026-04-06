@@ -108,9 +108,7 @@ class TestGetTransactionsByType:
             {"type_description": "Debito", "transaction_count": 40},
             {"type_description": "Credito", "transaction_count": 25},
         ]
-        with patch.object(
-            controller._repo, "get_transactions_by_type", return_value=repo_rows
-        ):
+        with patch.object(controller._repo, "get_transactions_by_type", return_value=repo_rows):
             result = controller.get_transactions_by_type()
 
         assert isinstance(result, TransactionsByTypeResponse)
@@ -125,13 +123,8 @@ class TestGetTransactionsByType:
         controller = _make_controller()
         # Build enough rows to force color cycling
         num_rows = len(_TYPE_COLORS) + 2
-        repo_rows = [
-            {"type_description": f"Type {i}", "transaction_count": i}
-            for i in range(num_rows)
-        ]
-        with patch.object(
-            controller._repo, "get_transactions_by_type", return_value=repo_rows
-        ):
+        repo_rows = [{"type_description": f"Type {i}", "transaction_count": i} for i in range(num_rows)]
+        with patch.object(controller._repo, "get_transactions_by_type", return_value=repo_rows):
             result = controller.get_transactions_by_type()
 
         expected_colors = [_TYPE_COLORS[i % len(_TYPE_COLORS)] for i in range(num_rows)]
@@ -148,9 +141,7 @@ class TestGetTransactionsTimeline:
             {"transaction_date": "2024-03-15", "transaction_count": 5},
             {"transaction_date": "2024-03-16", "transaction_count": 8},
         ]
-        with patch.object(
-            controller._repo, "get_transactions_timeline", return_value=repo_rows
-        ):
+        with patch.object(controller._repo, "get_transactions_timeline", return_value=repo_rows):
             result = controller.get_transactions_timeline()
 
         assert isinstance(result, UploadsTimelineResponse)
@@ -163,9 +154,7 @@ class TestGetTransactionsTimeline:
         repo_rows = [
             {"transaction_date": date(2024, 7, 4), "transaction_count": 3},
         ]
-        with patch.object(
-            controller._repo, "get_transactions_timeline", return_value=repo_rows
-        ):
+        with patch.object(controller._repo, "get_transactions_timeline", return_value=repo_rows):
             result = controller.get_transactions_timeline()
 
         assert result.labels == ["04/07/2024"]
@@ -177,9 +166,7 @@ class TestGetTransactionsTimeline:
         repo_rows = [
             {"transaction_date": "2024-12-01", "transaction_count": 10},
         ]
-        with patch.object(
-            controller._repo, "get_transactions_timeline", return_value=repo_rows
-        ):
+        with patch.object(controller._repo, "get_transactions_timeline", return_value=repo_rows):
             result = controller.get_transactions_timeline()
 
         assert result.labels == ["01/12/2024"]
@@ -190,9 +177,7 @@ class TestGetTransactionsTimeline:
         repo_rows = [
             {"transaction_date": "unexpected", "transaction_count": 1},
         ]
-        with patch.object(
-            controller._repo, "get_transactions_timeline", return_value=repo_rows
-        ):
+        with patch.object(controller._repo, "get_transactions_timeline", return_value=repo_rows):
             result = controller.get_transactions_timeline()
 
         assert result.labels == ["unexpected"]
@@ -303,9 +288,7 @@ class TestGetTransactionsByHour:
             {"hour": 9, "transaction_count": 15},
             {"hour": 14, "transaction_count": 30},
         ]
-        with patch.object(
-            controller._repo, "get_transactions_by_hour", return_value=repo_rows
-        ):
+        with patch.object(controller._repo, "get_transactions_by_hour", return_value=repo_rows):
             result = controller.get_transactions_by_hour()
 
         assert len(result.data) == 24
@@ -318,9 +301,7 @@ class TestGetTransactionsByHour:
         """get_transactions_by_hour maps repo counts to the correct hour index."""
         controller = _make_controller()
         repo_rows = [{"hour": h, "transaction_count": h * 2} for h in range(24)]
-        with patch.object(
-            controller._repo, "get_transactions_by_hour", return_value=repo_rows
-        ):
+        with patch.object(controller._repo, "get_transactions_by_hour", return_value=repo_rows):
             result = controller.get_transactions_by_hour()
 
         for h in range(24):
@@ -436,9 +417,7 @@ class TestGetAvailableFilters:
             "owners": ["Carol", "Dave"],
             "date_range": {"min_date": "2024-01-01", "max_date": "2024-12-31"},
         }
-        with patch.object(
-            controller._repo, "get_available_filters", return_value=repo_result
-        ):
+        with patch.object(controller._repo, "get_available_filters", return_value=repo_result):
             result = controller.get_available_filters()
 
         assert isinstance(result, AvailableFiltersResponse)
@@ -458,9 +437,7 @@ class TestGetAvailableFilters:
             "owners": [],
             "date_range": {"min_date": None, "max_date": None},
         }
-        with patch.object(
-            controller._repo, "get_available_filters", return_value=repo_result
-        ):
+        with patch.object(controller._repo, "get_available_filters", return_value=repo_result):
             result = controller.get_available_filters()
 
         assert result.stores == []

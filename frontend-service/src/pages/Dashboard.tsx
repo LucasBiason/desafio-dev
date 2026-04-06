@@ -8,6 +8,7 @@ import {
 import Layout from '../components/Layout';
 import DateInput from '../components/DateInput';
 import PageTitle from '../components/PageTitle';
+import { formatCurrency, formatDateTime } from '../utils/formatters';
 import StatCard from '../components/charts/StatCard';
 import BarChartCard from '../components/charts/BarChartCard';
 import PieChartCard from '../components/charts/PieChartCard';
@@ -21,29 +22,6 @@ import {
   type AvailableFilters,
   type TransactionDetail,
 } from '../services/dashboardService';
-
-function formatCurrency(value: string): string {
-  const num = parseFloat(value);
-  if (isNaN(num)) return value;
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(num);
-}
-
-function formatDateTime(occurred_at: string): string {
-  if (!occurred_at) return '';
-  const date = new Date(occurred_at);
-  if (isNaN(date.getTime())) return occurred_at;
-  return date.toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-}
 
 type NatureFilter = 'todas' | 'entrada' | 'saida';
 
