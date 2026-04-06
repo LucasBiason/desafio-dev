@@ -435,52 +435,58 @@ const Stores: FC = () => {
             </div>
 
             {/* Transaction filters */}
-            <div className="surface-card p-4 space-y-3">
-              {/* Type chips */}
+            <div className="surface-card p-4 space-y-4">
               {typeChips.length > 0 && (
-                <div className="flex flex-wrap gap-2 items-center">
-                  {typeChips.map((chip) => (
-                    <FilterChip
-                      key={chip.id}
-                      label={chip.label}
-                      colorClass={chip.colorClass}
-                      dotClass={chip.dotClass}
-                      active={selectedTypes.includes(chip.id)}
-                      onClick={() => handleTypeToggle(chip.id)}
-                    />
-                  ))}
-                  {hasTypeFilters && (
-                    <button
-                      type="button"
-                      onClick={handleClearTypeFilters}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary rounded-lg transition-colors"
-                      aria-label="Limpar filtros de tipo e natureza"
-                    >
-                      <FontAwesomeIcon icon={faXmark} aria-hidden="true" />
-                      Limpar
-                    </button>
-                  )}
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">Tipo de Transação</p>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {typeChips.map((chip) => (
+                      <FilterChip
+                        key={chip.id}
+                        label={chip.label}
+                        colorClass={chip.colorClass}
+                        dotClass={chip.dotClass}
+                        active={selectedTypes.includes(chip.id)}
+                        onClick={() => handleTypeToggle(chip.id)}
+                      />
+                    ))}
+                    {hasTypeFilters && (
+                      <button
+                        type="button"
+                        onClick={handleClearTypeFilters}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-primary rounded-lg transition-colors"
+                        aria-label="Limpar filtros de tipo e natureza"
+                      >
+                        <FontAwesomeIcon icon={faXmark} aria-hidden="true" />
+                        Limpar
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
-              {/* Nature chips */}
-              <div className="flex flex-wrap gap-2 items-center">
-                {NATURE_OPTIONS.map((opt) => (
-                  <FilterChip
-                    key={opt.value}
-                    label={opt.label}
-                    colorClass={opt.colorClass}
-                    dotClass={opt.dotClass}
-                    active={selectedNatures.includes(opt.value)}
-                    onClick={() => handleNatureToggle(opt.value)}
-                  />
-                ))}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">Natureza</p>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {NATURE_OPTIONS.map((opt) => (
+                    <FilterChip
+                      key={opt.value}
+                      label={opt.label}
+                      colorClass={opt.colorClass}
+                      dotClass={opt.dotClass}
+                      active={selectedNatures.includes(opt.value)}
+                      onClick={() => handleNatureToggle(opt.value)}
+                    />
+                  ))}
+                </div>
               </div>
 
-              {/* Date range */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <DateInput value={dateFrom} onChange={setDateFrom} label="Data início" />
-                <DateInput value={dateTo} onChange={setDateTo} label="Data fim" />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">Período</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <DateInput value={dateFrom} onChange={setDateFrom} label="De" />
+                  <DateInput value={dateTo} onChange={setDateTo} label="Até" />
+                </div>
               </div>
             </div>
 
