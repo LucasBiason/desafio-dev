@@ -13,6 +13,10 @@ COPY frontend-service/package*.json ./
 RUN npm ci
 
 COPY frontend-service/ .
+
+ARG VITE_BASE_PATH=/
+ENV VITE_BASE_PATH=$VITE_BASE_PATH
+
 RUN npm run build
 
 # -----------------------------------------------------------------------------

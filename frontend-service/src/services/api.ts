@@ -23,7 +23,7 @@ api.interceptors.response.use(
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       if (hadToken) {
-        window.location.href = '/login?session_expired=true';
+        window.location.href = `${import.meta.env.BASE_URL}login?session_expired=true`;
       }
     }
     return Promise.reject(error);
