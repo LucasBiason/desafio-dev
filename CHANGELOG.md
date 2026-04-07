@@ -6,6 +6,18 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.0.1] - 2026-04-07
+
+### Corrigido
+
+- Suporte a deploy em subdiretório (ex: `lucasbiason.com/cnab/`)
+- `VITE_BASE_PATH` como build arg no Dockerfile do frontend
+- `basename` no BrowserRouter para rotas SPA funcionarem sob subpath
+- `BASE_URL` no axios baseURL para chamadas de API sob subdiretório
+- Redirect de 401 e logout usando `BASE_URL` em vez de path fixo
+
+---
+
 ## [1.0.0] - 2026-04-06
 
 ### Adicionado
